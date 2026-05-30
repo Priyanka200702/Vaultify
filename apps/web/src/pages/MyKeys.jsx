@@ -57,7 +57,7 @@ export default function MyKeys() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {safeVaultKeys.map((key) => (
-            <div key={key._id} className="glass-card p-5 flex flex-col gap-3">
+            <div key={key._id} className="glass-card frost-card p-5 flex flex-col gap-3">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <div className="text-sm font-semibold text-vault-text-primary">{key.name}</div>

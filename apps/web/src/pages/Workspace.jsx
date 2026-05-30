@@ -105,10 +105,10 @@ export default function Workspace() {
           { label: 'Pending Requests', value: metrics.pending, sub: 'awaiting approval', color: 'text-amber-400' },
           { label: 'Calls Today', value: metrics.callsToday, sub: 'no anomalies' },
         ].map((m, i) => (
-          <div key={i} className="glass-card p-4">
-            <div className="text-xs text-vault-text-muted mb-1">{m.label}</div>
-            <div className={`text-2xl font-semibold text-vault-text-primary ${m.color || ''}`}>{m.value}</div>
-            <div className="text-xs text-vault-text-secondary mt-1">{m.sub}</div>
+          <div key={i} className="glass-card ambient-card p-4">
+            <div className="metric-label text-xs text-vault-text-muted mb-1">{m.label}</div>
+            <div className={`metric-value text-2xl font-semibold text-vault-text-primary ${m.color || ''}`}>{m.value}</div>
+            <div className="metric-sub text-xs text-vault-text-secondary mt-1">{m.sub}</div>
           </div>
         ))}
       </div>
@@ -217,11 +217,11 @@ export default function Workspace() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {safeVaultKeys.map((key) => (
-              <div key={key._id} className="glass-card p-5 flex flex-col gap-3">
+              <div key={key._id} className="glass-card frost-card p-5 flex flex-col gap-3">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <div className="text-sm font-semibold text-vault-text-primary">{key.name}</div>
-                    <div className="text-xs text-vault-text-muted capitalize">
+                    <div className="headline-text text-sm font-semibold text-vault-text-primary">{key.name}</div>
+                    <div className="body-text text-xs text-vault-text-muted capitalize">
                       {key.provider} · {key.environment}
                     </div>
                   </div>
@@ -231,8 +231,8 @@ export default function Workspace() {
                 </div>
 
                 <div className="rounded-lg border border-vault-border bg-[#0c1019]/70 p-3">
-                  <div className="text-[0.7rem] uppercase tracking-wider text-vault-text-muted mb-1">Key Prefix</div>
-                  <div className="font-mono text-xs text-vault-text-primary break-all">
+                  <div className="tag-label text-[0.7rem] uppercase tracking-wider text-vault-text-muted mb-1">Key Prefix</div>
+                  <div className="body-text font-mono text-xs text-vault-text-primary break-all">
                     {key.keyPrefix || 'Hidden'}
                   </div>
                 </div>
