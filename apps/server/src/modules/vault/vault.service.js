@@ -1,4 +1,4 @@
-const { VaultKey } = require('@vaultify/db');
+const { VaultKey, ProxyToken } = require('@vaultify/db');
 const { encryptKey, decryptKey } = require('../../services/encryption.service');
 const { keyCache } = require('../../services/cache.service');
 
@@ -103,12 +103,27 @@ async function getDecryptedKey(keyId) {
 }
 
 /**
- * Deletes a vault key and invalidates cache.
+ * Returns the count of active (non-revoked) proxy tokens for a vault key.
  */
-async function deleteKey(keyId) {
-  const result = await VaultKey.findByIdAndDelete(keyId);
-  keyCache.delete(keyId.toString());
-  return result;
+async function getActiveTokenCount(keyId) {
+  return ProxyToken.countDocuments({ vaultKeyId: keyId, revokedAt: null });
 }
 
-module.exports = { storeKey, rotateKey, listKeys, getKeyMeta, getDecryptedKey, deleteKey };
+/**
+ * Deletes a vault key, cascade-deletes all proxy tokens referencing it, and invalidates cache.
+ */
+async function deleteKey(keyId) {
+  const vaultKey = await VaultKey.findById(keyId);
+  if (!vaultKey) return null;
+
+  // Cascade: delete all proxy tokens referencing this key
+  const deleteResult = await ProxyToken.deleteMany({ vaultKeyId: keyId });
+
+  await VaultKey.findByIdAndDelete(keyId);
+  keyCache.delete(keyId.toString());
+
+  return { deletedTokens: deleteResult.deletedCount };
+}
+
+module.exports = { storeKey, rotateKey, listKeys, getKeyMeta, getDecryptedKey, getActiveTokenCount, deleteKey };
+

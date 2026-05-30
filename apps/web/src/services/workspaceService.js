@@ -24,6 +24,9 @@ export const rotateVaultKey = (id, newRawKey) =>
 export const deleteVaultKey = (id) =>
   api.delete(`/api/vault/keys/${id}`).then(r => r.data);
 
+export const getKeyTokenCount = (id) =>
+  api.get(`/api/vault/keys/${id}/tokens-count`).then(r => r.data);
+
 export const getRequests = (status) => {
   const params = status ? `?status=${status}` : '';
   return api.get(`/api/requests${params}`).then(r => r.data);

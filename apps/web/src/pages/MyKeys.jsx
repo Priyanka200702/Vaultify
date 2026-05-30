@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import useStore from '../store/store';
 import { useFetch } from '../hooks/useFetch';
-import { getVaultKeys, storeVaultKey } from '../services/workspaceService';
+import { getVaultKeys, storeVaultKey, deleteVaultKey, getKeyTokenCount } from '../services/workspaceService';
 import Button from '../components/ui/Button';
 import Modal from '../components/ui/Modal';
 import StoreKeyForm from '../components/forms/StoreKeyForm';
@@ -10,6 +10,8 @@ import { formatDate } from '../utils/helpers';
 export default function MyKeys() {
   const { vaultKeys, setVaultKeys } = useStore();
   const [isStoreKeyOpen, setIsStoreKeyOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null); // { key, activeTokens }
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const keysFetch = useFetch(getVaultKeys);
   const storeKeyFetch = useFetch(storeVaultKey);
@@ -27,6 +29,31 @@ export default function MyKeys() {
     await storeKeyFetch.execute(formData);
     setIsStoreKeyOpen(false);
     loadKeys();
+  };
+
+  const handleDeleteClick = async (key) => {
+    try {
+      const data = await getKeyTokenCount(key._id);
+      setDeleteTarget({ key, activeTokens: data.activeTokens });
+    } catch (err) {
+      console.error('Failed to check token count:', err);
+      // Fall back — open modal without count
+      setDeleteTarget({ key, activeTokens: 0 });
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
+    try {
+      await deleteVaultKey(deleteTarget.key._id);
+      setDeleteTarget(null);
+      loadKeys();
+    } catch (err) {
+      console.error('Delete failed:', err);
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const safeVaultKeys = vaultKeys || [];
@@ -79,6 +106,20 @@ export default function MyKeys() {
                 <span>Created</span>
                 <span>{key.createdAt ? formatDate(key.createdAt) : 'Unknown'}</span>
               </div>
+
+              <div className="pt-1 border-t border-vault-border/50">
+                <Button
+                  variant="danger"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => handleDeleteClick(key)}
+                >
+                  <svg className="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  Delete Key
+                </Button>
+              </div>
             </div>
           ))}
         </div>
@@ -88,6 +129,7 @@ export default function MyKeys() {
         Keys are encrypted with AES-256-GCM before storage and never returned in plaintext.
       </div>
 
+      {/* Add Key Modal */}
       <Modal
         isOpen={isStoreKeyOpen}
         onClose={() => setIsStoreKeyOpen(false)}
@@ -98,6 +140,74 @@ export default function MyKeys() {
           onSubmit={handleStoreKey}
           onCancel={() => setIsStoreKeyOpen(false)}
         />
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={!!deleteTarget}
+        onClose={() => !isDeleting && setDeleteTarget(null)}
+        title="Delete API Key"
+        sub={deleteTarget?.key?.name}
+      >
+        <div className="space-y-5">
+          {deleteTarget?.activeTokens > 0 ? (
+            <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 space-y-2">
+              <div className="flex items-center gap-2 text-red-400 font-semibold text-sm">
+                <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+                <span>Active tokens will be permanently deleted</span>
+              </div>
+              <p className="text-sm text-vault-text-secondary leading-relaxed">
+                This key has <strong className="text-red-300">{deleteTarget.activeTokens} active proxy token{deleteTarget.activeTokens !== 1 ? 's' : ''}</strong>.
+                Deleting this key will <strong className="text-red-300">immediately and permanently delete</strong> all proxy tokens created for it.
+                Any applications using these tokens will stop working.
+              </p>
+            </div>
+          ) : (
+            <p className="text-sm text-vault-text-secondary leading-relaxed">
+              Are you sure you want to delete this key? This action cannot be undone.
+            </p>
+          )}
+
+          <div className="rounded-lg border border-vault-border bg-[#0c1019]/70 p-3">
+            <div className="grid grid-cols-2 gap-y-2 text-xs">
+              <span className="text-vault-text-muted">Name</span>
+              <span className="text-vault-text-primary font-medium text-right">{deleteTarget?.key?.name}</span>
+              <span className="text-vault-text-muted">Provider</span>
+              <span className="text-vault-text-primary capitalize text-right">{deleteTarget?.key?.provider}</span>
+              <span className="text-vault-text-muted">Prefix</span>
+              <span className="text-vault-text-primary font-mono text-right">{deleteTarget?.key?.keyPrefix}</span>
+              {deleteTarget?.activeTokens > 0 && (
+                <>
+                  <span className="text-vault-text-muted">Active tokens</span>
+                  <span className="text-red-400 font-semibold text-right">{deleteTarget.activeTokens}</span>
+                </>
+              )}
+            </div>
+          </div>
+
+          <div className="flex gap-3 pt-1">
+            <Button
+              variant="ghost"
+              className="flex-1"
+              onClick={() => setDeleteTarget(null)}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              className="flex-1"
+              onClick={handleConfirmDelete}
+              loading={isDeleting}
+            >
+              {deleteTarget?.activeTokens > 0
+                ? `Delete Key & ${deleteTarget.activeTokens} Token${deleteTarget.activeTokens !== 1 ? 's' : ''}`
+                : 'Delete Key'}
+            </Button>
+          </div>
+        </div>
       </Modal>
     </div>
   );

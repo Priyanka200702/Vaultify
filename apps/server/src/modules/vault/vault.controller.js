@@ -78,16 +78,38 @@ async function rotateKey(req, res, next) {
 }
 
 /**
- * DELETE /api/vault/keys/:id — delete a key
+ * GET /api/vault/keys/:id/tokens-count — get active proxy token count for a key
  */
-async function deleteKey(req, res, next) {
+async function getKeyTokenCount(req, res, next) {
   try {
     const { id } = req.params;
-    await vaultService.deleteKey(id);
-    res.json({ message: 'Key deleted from vault' });
+    const count = await vaultService.getActiveTokenCount(id);
+    res.json({ activeTokens: count });
   } catch (err) {
     next(err);
   }
 }
 
-module.exports = { storeKey, listKeys, rotateKey, deleteKey };
+/**
+ * DELETE /api/vault/keys/:id — delete a key and cascade-delete all its proxy tokens
+ */
+async function deleteKey(req, res, next) {
+  try {
+    const { id } = req.params;
+    const result = await vaultService.deleteKey(id);
+
+    if (!result) {
+      return res.status(404).json({ error: 'NOT_FOUND', message: 'Vault key not found' });
+    }
+
+    res.json({
+      message: 'Key deleted from vault',
+      deletedTokens: result.deletedTokens,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { storeKey, listKeys, rotateKey, getKeyTokenCount, deleteKey };
+

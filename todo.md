@@ -81,4 +81,42 @@ Goal: publish two npm packages:
 
 ---
 
+---
+
+## Phase 10 — Add Delete Key Feature
+
+Goal: allow users to delete vault API keys from the dashboard and CLI, with protection against deleting keys that have active tokens.
+
+### Backend — Vault Service
+- [ ] `apps/server/src/modules/vault/vault.service.js` — `deleteKey()`: count active tokens (`ProxyToken.countDocuments({ vaultKeyId, revokedAt: null })`) before deleting. If > 0, throw error with code `ACTIVE_TOKENS_EXIST` listing the count.
+
+### Backend — Token Service
+- [ ] `apps/server/src/modules/tokens/token.service.js` — `issueToken()`: validate vault key exists (`VaultKey.findById(vaultKeyId)`) before creating the token. If not found, throw error with code `VAULT_KEY_NOT_FOUND`.
+
+### Frontend — MyKeys.jsx (Dashboard)
+- [ ] Add Delete button (danger variant, small) on each key card
+- [ ] Add confirmation modal showing key name, provider, environment
+- [ ] If key has active tokens: show warning and block deletion until tokens are revoked
+- [ ] Call `deleteVaultKey(id)` from workspaceService on confirm
+- [ ] Remove deleted key from UI state and close modal on success
+
+### Frontend — Tokens.jsx / IssueTokenForm.jsx
+- [ ] Disable "Issue Token" button when no vault keys exist, with tooltip: "No API keys stored. Add one in My Keys first."
+- [ ] `IssueTokenForm`: show empty-state message instead of empty dropdown when no vault keys available
+
+### CLI — vaultify keys list
+- [ ] Create `apps/cli/src/commands/keys.js` — `vaultify keys list` fetches and displays vault keys in a table (ID, Name, Provider, Environment, Prefix)
+
+### CLI — vaultify keys delete
+- [ ] Create `apps/cli/src/commands/keysDelete.js` — `vaultify keys delete <id>` with confirmation prompt before calling DELETE API
+- [ ] Handle `ACTIVE_TOKENS_EXIST` error and show informative message
+
+### CLI — register keys command group
+- [ ] `apps/cli/src/index.js` — add `.command('keys')` with `list` and `delete <id>` subcommands
+
+### Docs — api_test.md
+- [ ] Add vault keys API test section with store/list/delete flow, error cases (delete with active tokens, issue token with invalid keyId)
+
+---
+
 If this looks good I will scaffold `packages/vaultify` and create the initial `index.js`, tests, and package.json. Reply `go` to start.

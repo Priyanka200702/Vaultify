@@ -1,5 +1,6 @@
 const { ProxyToken, AuditLog } = require('@vaultify/db');
 const { generateProxyToken, validateTokenFormat, ipAllowed, rollingWindowCount } = require('@vaultify/utils');
+const { DEFAULT_RATE_LIMITS, DEFAULT_TOKEN_EXPIRY } = require('../../config/constants');
 
 /**
  * Issues a new proxy token for a vault key.
