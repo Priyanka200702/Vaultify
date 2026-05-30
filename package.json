@@ -1,0 +1,30 @@
+{
+  "name": "vaultify-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Developer security tool — replace real API keys with proxy tokens on deployment platforms",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:server": "npm run dev --workspace=apps/server",
+    "dev:web": "npm run dev --workspace=apps/web",
+    "build:server": "npm run build --workspace=apps/server",
+    "build:web": "npm run build --workspace=apps/web",
+    "build:cli": "npm run build --workspace=apps/cli",
+    "seed": "node infra/scripts/seed.js"
+  },
+  "keywords": [
+    "security",
+    "api-keys",
+    "proxy",
+    "vault",
+    "vercel"
+  ],
+  "author": "Vaultify Team",
+  "license": "MIT",
+  "dependencies": {
+    "bcrypt": "^6.0.0"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "name": "@vaultify/utils",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Common helpers — token generation, IP validation, rate limiting",
+  "main": "index.js"
+}

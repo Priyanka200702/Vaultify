@@ -1,0 +1,43 @@
+{
+  "name": "vaultify",
+  "version": "0.1.0",
+  "private": false,
+  "description": "Vaultify SDK — route API calls through the Vaultify proxy using secure proxy tokens",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js"
+  },
+  "files": [
+    "index.js",
+    "lib/",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test __tests__/client.test.js __tests__/stream.test.js"
+  },
+  "keywords": [
+    "vaultify",
+    "proxy",
+    "api-keys",
+    "security",
+    "anthropic",
+    "openai",
+    "vault",
+    "proxy-token"
+  ],
+  "author": "Vaultify Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-org/vaultify",
+    "directory": "packages/vaultify"
+  },
+  "homepage": "https://github.com/your-org/vaultify#readme",
+  "bugs": {
+    "url": "https://github.com/your-org/vaultify/issues"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "name": "@vaultify/crypto",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AES-256-GCM encryption helpers for Vaultify",
+  "main": "index.js"
+}

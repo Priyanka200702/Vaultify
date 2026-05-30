@@ -1,0 +1,84 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  
+  --color-vault-bg-primary: #06080F;
+  --color-vault-bg-secondary: #0C1019;
+  --color-vault-bg-card: rgba(15, 20, 35, 0.7);
+  --color-vault-bg-card-hover: rgba(20, 28, 50, 0.8);
+  --color-vault-bg-input: rgba(15, 20, 35, 0.9);
+  
+  --color-vault-primary: #6366F1;
+  --color-vault-primary-hover: #818CF8;
+  
+  --color-vault-glass-bg: rgba(16, 22, 40, 0.55);
+  --color-vault-glass-border: rgba(99, 102, 241, 0.12);
+  --color-vault-border: rgba(148, 163, 184, 0.08);
+  --color-vault-border-hover: rgba(99, 102, 241, 0.3);
+  
+  --color-vault-text-primary: #F1F5F9;
+  --color-vault-text-secondary: #94A3B8;
+  --color-vault-text-muted: #64748B;
+}
+
+@layer base {
+  body {
+    @apply bg-vault-bg-primary text-vault-text-primary antialiased;
+    background-image: 
+      radial-gradient(ellipse 80% 60% at 10% 20%, rgba(99, 102, 241, 0.08), transparent),
+      radial-gradient(ellipse 60% 50% at 80% 80%, rgba(16, 185, 129, 0.06), transparent),
+      radial-gradient(ellipse 50% 40% at 50% 50%, rgba(34, 211, 238, 0.04), transparent);
+    background-attachment: fixed;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-vault-glass-bg backdrop-blur-xl border border-vault-glass-border rounded-2xl transition-all duration-300;
+  }
+
+  .glass-card:hover {
+    @apply border-vault-border-hover shadow-[0_0_30px_rgba(99,102,241,0.25)];
+  }
+
+  .vault-input {
+    @apply w-full bg-vault-bg-input border border-vault-border rounded-lg px-3.5 py-2.5 text-sm text-vault-text-primary transition-colors focus:outline-none focus:border-vault-primary focus:ring-3 focus:ring-indigo-500/25 placeholder:text-vault-text-muted;
+  }
+
+  .vault-label {
+    @apply block text-xs font-medium text-vault-text-secondary mb-1.5 uppercase tracking-wide;
+  }
+
+  .badge {
+    @apply inline-flex items-center rounded-full border px-2 py-0.5 text-[0.7rem] font-semibold capitalize;
+  }
+
+  .badge-owner {
+    @apply border-vault-primary/30 bg-vault-primary/15 text-vault-primary-hover;
+  }
+
+  .badge-member {
+    @apply border-emerald-500/25 bg-emerald-500/10 text-emerald-300;
+  }
+
+  .scope-pill {
+    @apply inline-flex max-w-full items-center rounded-full border border-vault-border bg-white/5 px-2 py-1 text-[0.7rem] text-vault-text-secondary;
+  }
+
+  .log-row {
+    @apply grid grid-cols-[auto_auto_1fr_auto] items-center gap-3 rounded-lg border border-vault-border bg-white/5 px-3 py-2 text-sm;
+  }
+
+  .log-time {
+    @apply font-mono text-[0.7rem] text-vault-text-muted;
+  }
+
+  .log-action {
+    @apply min-w-0 truncate text-vault-text-secondary;
+  }
+
+  .log-endpoint {
+    @apply rounded-full border border-vault-border bg-vault-bg-input px-2 py-1 font-mono text-[0.7rem];
+  }
+}

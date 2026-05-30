@@ -1,0 +1,19 @@
+{
+  "files.associations": {
+    "*.css": "tailwindcss"
+  },
+  "editor.quickSuggestions": {
+    "strings": true
+  },
+  "tailwindCSS.classAttributes": [
+    "class",
+    "className"
+  ],
+  "tailwindCSS.experimental.classRegex": [
+    ["clsx\\(([^)]*)\\)", "(?:'|\"|`|\\s|,)([\\w-]+|\\[[^\\]]*\\])"],
+    ["className=['\\\"]([^'\\\"]*)['\\\"]", "([\\w-\\[\\]\\(\\)\\,\\/\\.\\#\\%\\-\\:\\.]+)"],
+    ["@apply\\s+([^;]*)", "([^\\s]+|\\[[^\\]]*\\])"],
+    ["(?:className|class)\\s*=\\s*['\\\"]([^'\\\"]*)['\\\"]", "([\\w-]+|\\[[^\\]]*\\])"]
+  ],
+  "css.lint.unknownAtRules": "ignore"
+}

@@ -1,0 +1,23 @@
+name: Vaultify Preview Cleanup
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  cleanup-preview-tokens:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify Vaultify to revoke preview tokens
+        run: |
+          curl -X POST "${{ secrets.VAULTIFY_WEBHOOK_URL }}/api/webhooks/github-pr-merged" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"action\": \"closed\",
+              \"pull_request\": {
+                \"merged\": true,
+                \"head\": {\"ref\": \"${{ github.head_ref }}\"}
+              },
+              \"repository\": {\"full_name\": \"${{ github.repository }}\"}
+            }"

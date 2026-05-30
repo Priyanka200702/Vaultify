@@ -1,0 +1,7 @@
+{
+  "name": "@vaultify/logger",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Audit logging utilities for Vaultify",
+  "main": "index.js"
+}
