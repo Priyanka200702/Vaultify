@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { workspaceScopedPlugin } = require('../plugins/workspaceScoped');
 
 const auditLogSchema = new mongoose.Schema({
   tokenId: {
@@ -32,16 +33,36 @@ const auditLogSchema = new mongoose.Schema({
     required: true,
   },
   geoLocation: {
-    type: String, // e.g. "US, California"
+    type: String,
     default: null,
   },
   endpoint: {
-    type: String, // e.g. "POST /v1/messages"
+    type: String,
     required: true,
   },
   provider: {
     type: String,
     required: true,
+  },
+  // Body inspection fields
+  requestBodySnippet: {
+    type: String,
+    default: null,
+    maxlength: 4096,
+  },
+  requestBodyFormat: {
+    type: String,
+    enum: ['json', 'text', 'binary', null],
+    default: null,
+  },
+  injectionPatterns: {
+    type: [String],
+    default: [],
+  },
+  responseHeaders: {
+    type: Map,
+    of: String,
+    default: null,
   },
   // Response details
   statusCode: {
@@ -53,11 +74,11 @@ const auditLogSchema = new mongoose.Schema({
     required: true,
   },
   requestSize: {
-    type: Number, // bytes
+    type: Number,
     default: 0,
   },
   responseSize: {
-    type: Number, // bytes
+    type: Number,
     default: 0,
   },
   environment: {
@@ -69,9 +90,22 @@ const auditLogSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  // Hash chain integrity fields
+  prevEntryHash: {
+    type: String,
+    default: null,
+  },
+  entryHash: {
+    type: String,
+    default: null,
+    index: true,
+  },
 });
 
-// TTL index — auto-delete after 90 days
+// Compound index for query performance + TTL
 auditLogSchema.index({ timestamp: 1 }, { expireAfterSeconds: 90 * 24 * 60 * 60 });
+auditLogSchema.index({ workspaceId: 1, timestamp: -1 });
+
+auditLogSchema.plugin(workspaceScopedPlugin);
 
 module.exports = mongoose.model('AuditLog', auditLogSchema);

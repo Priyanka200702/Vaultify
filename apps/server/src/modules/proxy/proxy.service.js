@@ -1,4 +1,4 @@
-const { PROVIDER_URLS, PROVIDER_AUTH_HEADERS } = require('../../config/constants');
+const { getBaseUrl, getAuthConfig: getProviderAuthConfig } = require('@vaultify/utils');
 
 /**
  * Resolves a provider name to its base URL.
@@ -6,7 +6,7 @@ const { PROVIDER_URLS, PROVIDER_AUTH_HEADERS } = require('../../config/constants
  * @returns {string | null}
  */
 function getProviderUrl(provider) {
-  return PROVIDER_URLS[provider.toLowerCase()] || null;
+  return getBaseUrl(provider);
 }
 
 /**
@@ -15,7 +15,7 @@ function getProviderUrl(provider) {
  * @returns {{ header: string, prefix: string }}
  */
 function getAuthConfig(provider) {
-  return PROVIDER_AUTH_HEADERS[provider.toLowerCase()] || { header: 'Authorization', prefix: 'Bearer ' };
+  return getProviderAuthConfig(provider);
 }
 
 /**

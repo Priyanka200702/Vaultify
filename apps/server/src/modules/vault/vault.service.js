@@ -1,5 +1,5 @@
 const { VaultKey, ProxyToken } = require('@vaultify/db');
-const { encryptKey, decryptKey } = require('../../services/encryption.service');
+const { encryptKey, decryptKey, reEncryptKey } = require('../../services/encryption.service');
 const { keyCache } = require('../../services/cache.service');
 
 /**
@@ -34,11 +34,11 @@ async function storeKey(workspaceId, { name, provider, environment, rawKey }) {
  * Rotates a real key — re-encrypts with new value.
  * All proxy tokens continue working (they reference the vault key ID, not the raw key).
  */
-async function rotateKey(keyId, newRawKey) {
-  const vaultKey = await VaultKey.findById(keyId);
+async function rotateKey(keyId, newRawKey, workspaceId) {
+  const vaultKey = await VaultKey.findOne({ _id: keyId, workspaceId });
   if (!vaultKey) throw new Error('Vault key not found');
 
-  const encryptedKey = encryptKey(newRawKey);
+  const encryptedKey = reEncryptKey(newRawKey, vaultKey.encryptedKey);
   const keyPrefix = newRawKey.substring(0, 8) + '***';
 
   vaultKey.encryptedKey = encryptedKey;
@@ -105,21 +105,21 @@ async function getDecryptedKey(keyId) {
 /**
  * Returns the count of active (non-revoked) proxy tokens for a vault key.
  */
-async function getActiveTokenCount(keyId) {
-  return ProxyToken.countDocuments({ vaultKeyId: keyId, revokedAt: null });
+async function getActiveTokenCount(keyId, workspaceId) {
+  return ProxyToken.countDocuments({ vaultKeyId: keyId, workspaceId, revokedAt: null });
 }
 
 /**
  * Deletes a vault key, cascade-deletes all proxy tokens referencing it, and invalidates cache.
  */
-async function deleteKey(keyId) {
-  const vaultKey = await VaultKey.findById(keyId);
+async function deleteKey(keyId, workspaceId) {
+  const vaultKey = await VaultKey.findOne({ _id: keyId, workspaceId });
   if (!vaultKey) return null;
 
   // Cascade: delete all proxy tokens referencing this key
-  const deleteResult = await ProxyToken.deleteMany({ vaultKeyId: keyId });
+  const deleteResult = await ProxyToken.deleteMany({ vaultKeyId: keyId, workspaceId });
 
-  await VaultKey.findByIdAndDelete(keyId);
+  await VaultKey.findOneAndDelete({ _id: keyId, workspaceId });
   keyCache.delete(keyId.toString());
 
   return { deletedTokens: deleteResult.deletedCount };

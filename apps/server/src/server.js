@@ -1,17 +1,29 @@
-const { env, validateEnv } = require('./config/env');
+const { env } = require('./config/env');
 const { initDatabase } = require('./config/db');
+const mongoose = require('mongoose');
 const app = require('./app');
+
+process.on('uncaughtException', (err) => {
+  console.error('[FATAL] Uncaught exception:', err.stack || err.message);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.error('[FATAL] Unhandled rejection:', reason instanceof Error ? reason.stack : reason);
+  process.exit(1);
+});
+
+mongoose.connection.on('error', (err) => {
+  console.error('[DB] MongoDB connection error:', err.message);
+});
+
+mongoose.connection.on('disconnected', () => {
+  console.warn('[DB] MongoDB disconnected — attempting reconnect...');
+});
 
 async function start() {
   try {
-    // Validate environment variables
-    validateEnv();
-    console.log('✅ Environment validated');
-
-    // Connect to MongoDB
     await initDatabase();
-
-    // Start HTTP server
     app.listen(env.PORT, () => {
       console.log(`\n🔐 Vaultify Server running on http://localhost:${env.PORT}`);
       console.log(`   Environment: ${env.NODE_ENV}`);

@@ -1,70 +1,32 @@
-/**
- * Provider base URL map — used by the proxy engine to forward requests.
- */
-const PROVIDER_URLS = {
-  anthropic: 'https://api.anthropic.com',
-  openai: 'https://api.openai.com',
-  stripe: 'https://api.stripe.com',
-  github: 'https://api.github.com',
-};
+const { registry, getBaseUrl, getAuthConfig } = require('@vaultify/utils');
 
 /**
- * Provider auth header format.
- * Most use Authorization: Bearer, but some differ.
+ * Provider base URL map — built from the provider registry.
  */
-const PROVIDER_AUTH_HEADERS = {
-  anthropic: { header: 'x-api-key', prefix: '' },
-  openai: { header: 'Authorization', prefix: 'Bearer ' },
-  stripe: { header: 'Authorization', prefix: 'Bearer ' },
-  github: { header: 'Authorization', prefix: 'Bearer ' },
-};
+const PROVIDER_URLS = Object.fromEntries(
+  Object.entries(registry).map(([k, v]) => [k, v.baseUrl]).filter(([, v]) => v !== null)
+);
 
 /**
- * Known API key prefixes — used by CLI to auto-detect provider.
- * Covers 34+ providers.
+ * Provider auth header format — built from the provider registry.
  */
-const KEY_PREFIXES = {
-  // AI/ML
-  'sk-ant-': 'anthropic',
-  'sk-': 'openai',
-  'gsk-': 'groq',
-  'r8_': 'replicate',
-  'hf_': 'huggingface',
-  // Payments
-  'sk_live_': 'stripe',
-  'sk_test_': 'stripe',
-  'rk_live_': 'stripe',
-  'rk_test_': 'stripe',
-  // Version Control
-  'ghp_': 'github',
-  'github_pat_': 'github',
-  'glpat-': 'gitlab',
-  // Cloud
-  'AKIA': 'aws',
-  'ya29.': 'gcp',
-  // Communication
-  'SG.': 'sendgrid',
-  'AC': 'twilio',
-  're_': 'resend',
-  // Databases
-  'sbp_': 'supabase',
-  'pscale_': 'planetscale',
-  // Analytics
-  'vercel_': 'vercel',
-  // Other
-  'shpat_': 'shopify',
-  'CFPAT-': 'contentful',
-  'APCA': 'algolia',
-  'pk.': 'mapbox',
-  // OAuth tokens (longer format)
-  'gho_': 'github',
-  'github_oauth_': 'github',
-};
+const PROVIDER_AUTH_HEADERS = Object.fromEntries(
+  Object.entries(registry).map(([k, v]) => [k, v.auth])
+);
+
+/**
+ * Known API key prefixes — built from the provider registry.
+ */
+const KEY_PREFIXES = Object.fromEntries(
+  Object.entries(registry).flatMap(([provider, config]) =>
+    config.keyPrefixes.map(prefix => [prefix, provider])
+  )
+);
 
 /**
  * Cache TTL for decrypted keys (milliseconds).
  */
-const KEY_CACHE_TTL = 60 * 1000; // 60 seconds
+const KEY_CACHE_TTL = 5 * 1000; // 5 seconds — reduced from 60s to limit heap exposure
 
 /**
  * Default rate limits per environment.

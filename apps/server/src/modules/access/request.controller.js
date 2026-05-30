@@ -22,7 +22,11 @@ async function submitRequest(req, res, next) {
       reason,
     });
 
-    res.status(201).json({ message: 'Access request submitted', request });
+    res.status(201).json({
+      message: 'Access request submitted',
+      request,
+      csrfState: request.csrfState,
+    });
   } catch (err) {
     next(err);
   }
@@ -40,8 +44,9 @@ async function listRequests(req, res, next) {
 
 async function approveRequest(req, res, next) {
   try {
-    const { ownerNote, overrides } = req.body;
-    const { request, token } = await requestService.approveRequest(req.params.id, ownerNote, overrides || {});
+    const { ownerNote, overrides, csrfState } = req.body;
+    const mergedOverrides = { ...(overrides || {}), csrfState };
+    const { request, token } = await requestService.approveRequest(req.params.id, ownerNote, mergedOverrides);
     res.json({
       message: 'Request approved — proxy token issued',
       request,
@@ -62,8 +67,8 @@ async function approveRequest(req, res, next) {
 
 async function denyRequest(req, res, next) {
   try {
-    const { ownerNote } = req.body;
-    const request = await requestService.denyRequest(req.params.id, ownerNote);
+    const { ownerNote, csrfState } = req.body;
+    const request = await requestService.denyRequest(req.params.id, ownerNote, { csrfState });
     res.json({ message: 'Request denied', request });
   } catch (err) {
     next(err);

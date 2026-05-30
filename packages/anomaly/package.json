@@ -1,0 +1,8 @@
+{
+  "name": "@vaultify/anomaly",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Anomaly detection and lockout for Vaultify proxy tokens",
+  "main": "index.js",
+  "dependencies": {}
+}

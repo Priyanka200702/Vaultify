@@ -1,22 +1,37 @@
-const { encrypt, decrypt } = require('@vaultify/crypto');
+const { encryptWithDek, decryptWithDek, generateDek, wrapDek, unwrapDek } = require('@vaultify/crypto');
 const { env } = require('../config/env');
 
-/**
- * Encrypts a raw API key using the server's encryption key.
- * @param {string} rawKey - The plaintext API key.
- * @returns {{ iv: string, authTag: string, ciphertext: string }}
- */
 function encryptKey(rawKey) {
-  return encrypt(rawKey, env.ENCRYPTION_KEY);
+  const dek = generateDek();
+  const nonceCounter = 0;
+  const encrypted = encryptWithDek(rawKey, dek, nonceCounter);
+  const wrappedDek = wrapDek(dek, env.ENCRYPTION_KEY);
+  return {
+    wrappedDek,
+    nonceCounter: nonceCounter + 1,
+    iv: encrypted.iv,
+    authTag: encrypted.authTag,
+    ciphertext: encrypted.ciphertext,
+  };
 }
 
-/**
- * Decrypts an encrypted API key payload.
- * @param {{ iv: string, authTag: string, ciphertext: string }} encryptedPayload
- * @returns {string} The plaintext API key.
- */
 function decryptKey(encryptedPayload) {
-  return decrypt(encryptedPayload, env.ENCRYPTION_KEY);
+  const { wrappedDek, iv, authTag, ciphertext } = encryptedPayload;
+  const dek = unwrapDek(wrappedDek, env.ENCRYPTION_KEY);
+  return decryptWithDek({ iv, authTag, ciphertext }, dek);
 }
 
-module.exports = { encryptKey, decryptKey };
+function reEncryptKey(rawKey, existingEncryptedPayload) {
+  const { wrappedDek, nonceCounter = 0 } = existingEncryptedPayload;
+  const dek = unwrapDek(wrappedDek, env.ENCRYPTION_KEY);
+  const encrypted = encryptWithDek(rawKey, dek, nonceCounter);
+  return {
+    wrappedDek,
+    nonceCounter: nonceCounter + 1,
+    iv: encrypted.iv,
+    authTag: encrypted.authTag,
+    ciphertext: encrypted.ciphertext,
+  };
+}
+
+module.exports = { encryptKey, decryptKey, reEncryptKey };

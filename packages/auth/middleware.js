@@ -1,10 +1,5 @@
-const { verifyToken } = require('./jwt');
+const { verifyToken, checkTokenBinding } = require('./jwt');
 
-/**
- * Express middleware — validates JWT from Authorization header.
- * Attaches decoded user to req.user on success.
- * Expects: Authorization: Bearer <token>
- */
 function requireAuth(jwtSecret) {
   return (req, res, next) => {
     const authHeader = req.headers.authorization;
@@ -26,17 +21,19 @@ function requireAuth(jwtSecret) {
       });
     }
 
+    const binding = checkTokenBinding(decoded, req);
+    if (!binding.valid) {
+      return res.status(401).json({
+        error: 'TOKEN_BINDING_FAILED',
+        message: binding.reason,
+      });
+    }
+
     req.user = decoded;
     next();
   };
 }
 
-/**
- * Express middleware — checks that the authenticated user has the required role.
- * Must be used after requireAuth.
- *
- * @param {...string} roles - Allowed roles (e.g. 'owner', 'member', 'viewer').
- */
 function requireRole(...roles) {
   return (req, res, next) => {
     if (!req.user) {

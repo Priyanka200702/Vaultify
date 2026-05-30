@@ -7,7 +7,7 @@ const router = Router();
 
 router.post('/register', authLimiter, register);
 router.post('/login', authLimiter, login);
-router.post('/refresh', refresh);
+router.post('/refresh', authLimiter, refresh);
 router.post('/logout', authMiddleware, logout);
 router.get('/me', authMiddleware, getMe);
 
@@ -27,7 +27,7 @@ router.get('/oauth/github', (req, res) => {
  * OAuth 2.0 callback handler.
  * GET /api/auth/oauth/github/callback
  */
-router.get('/oauth/github/callback', async (req, res) => {
+router.get('/oauth/github/callback', async (req, res, next) => {
   try {
     const { code } = req.query;
     if (!code) return res.status(400).send('Missing authorization code');
@@ -97,8 +97,7 @@ router.get('/oauth/github/callback', async (req, res) => {
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
     res.redirect(`${frontendUrl}/oauth/callback?token=${jwtToken}`);
   } catch (err) {
-    console.error('OAuth callback error:', err.message);
-    res.status(500).send('Authentication failed');
+    next(err);
   }
 });
 

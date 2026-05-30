@@ -10,7 +10,9 @@
     "build": "echo \"No build step for server package\""
   },
   "dependencies": {
+    "@vaultify/anomaly": "file:../../packages/anomaly",
     "@vaultify/db": "file:../../packages/db",
+    "@vaultify/ratelimit": "file:../../packages/ratelimit",
     "axios": "^1.6.0",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",

@@ -1,7 +1,17 @@
+const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const { User, Workspace } = require('@vaultify/db');
 const { signToken } = require('@vaultify/auth');
 const { env } = require('../../config/env');
+
+function computeBinding(req) {
+  const clientIp = (req.headers['x-forwarded-for'] || req.ip || '').split(',')[0].trim();
+  const ua = req.headers['user-agent'] || '';
+  return {
+    ipHash: crypto.createHash('sha256').update(clientIp).digest('hex').slice(0, 16),
+    uaHash: crypto.createHash('sha256').update(ua).digest('hex').slice(0, 16),
+  };
+}
 
 /**
  * POST /api/auth/register
@@ -54,10 +64,11 @@ async function register(req, res, next) {
     user.workspaceId = workspace._id;
     await user.save();
 
-    // Generate tokens
+    // Generate tokens with binding
+    const binding = computeBinding(req);
     const payload = { userId: user._id, email: user.email, name: user.name, role: user.role, workspaceId: workspace._id };
-    const accessToken = signToken(payload, env.JWT_SECRET, '1h');
-    const refreshToken = signToken(payload, env.REFRESH_TOKEN_SECRET, '7d');
+    const accessToken = signToken(payload, env.JWT_SECRET, '1h', binding);
+    const refreshToken = signToken(payload, env.REFRESH_TOKEN_SECRET, '7d', binding);
 
     // Store refresh token
     user.refreshToken = refreshToken;
@@ -97,9 +108,10 @@ async function login(req, res, next) {
       return res.status(401).json({ error: 'AUTH_FAILED', message: 'Invalid email or password' });
     }
 
+    const binding = computeBinding(req);
     const payload = { userId: user._id, email: user.email, name: user.name, role: user.role, workspaceId: user.workspaceId };
-    const accessToken = signToken(payload, env.JWT_SECRET, '1h');
-    const refreshToken = signToken(payload, env.REFRESH_TOKEN_SECRET, '7d');
+    const accessToken = signToken(payload, env.JWT_SECRET, '1h', binding);
+    const refreshToken = signToken(payload, env.REFRESH_TOKEN_SECRET, '7d', binding);
 
     user.refreshToken = refreshToken;
     await user.save();
@@ -138,9 +150,10 @@ async function refresh(req, res, next) {
       return res.status(401).json({ error: 'TOKEN_INVALID', message: 'Refresh token is invalid or revoked' });
     }
 
+    const binding = computeBinding(req);
     const payload = { userId: user._id, email: user.email, name: user.name, role: user.role, workspaceId: user.workspaceId };
-    const newAccessToken = signToken(payload, env.JWT_SECRET, '1h');
-    const newRefreshToken = signToken(payload, env.REFRESH_TOKEN_SECRET, '7d');
+    const newAccessToken = signToken(payload, env.JWT_SECRET, '1h', binding);
+    const newRefreshToken = signToken(payload, env.REFRESH_TOKEN_SECRET, '7d', binding);
 
     user.refreshToken = newRefreshToken;
     await user.save();

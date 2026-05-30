@@ -1,12 +1,20 @@
+const crypto = require('crypto');
 const { AccessRequest, ProxyToken, User, Workspace } = require('@vaultify/db');
 const { issueToken } = require('../tokens/token.service');
 const { notifyAccessRequest, notifyRequestDecision } = require('../../services/notification.service');
+
+function generateCsrfState() {
+  return crypto.randomBytes(32).toString('hex');
+}
 
 /**
  * Submits an access request.
  */
 async function submitRequest(requestData) {
-  const request = await AccessRequest.create(requestData);
+  const request = await AccessRequest.create({
+    ...requestData,
+    csrfState: generateCsrfState(),
+  });
 
   // Notify owner
   const workspace = await Workspace.findById(requestData.workspaceId).populate('ownerId');
@@ -38,6 +46,9 @@ async function approveRequest(requestId, ownerNote = null, overrides = {}) {
   const request = await AccessRequest.findById(requestId);
   if (!request) throw new Error('Request not found');
   if (request.status !== 'pending') throw new Error('Request is not pending');
+  if (overrides.csrfState && request.csrfState && overrides.csrfState !== request.csrfState) {
+    throw new Error('Invalid CSRF state token');
+  }
 
   // Apply overrides (owner can tighten scope)
   const scope = {
@@ -71,10 +82,13 @@ async function approveRequest(requestId, ownerNote = null, overrides = {}) {
 /**
  * Denies an access request.
  */
-async function denyRequest(requestId, ownerNote) {
+async function denyRequest(requestId, ownerNote, overrides = {}) {
   const request = await AccessRequest.findById(requestId);
   if (!request) throw new Error('Request not found');
   if (request.status !== 'pending') throw new Error('Request is not pending');
+  if (overrides.csrfState && request.csrfState && overrides.csrfState !== request.csrfState) {
+    throw new Error('Invalid CSRF state token');
+  }
 
   request.status = 'denied';
   request.ownerNote = ownerNote || 'No reason provided';

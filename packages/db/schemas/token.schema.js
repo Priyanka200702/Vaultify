@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { workspaceScopedPlugin } = require('../plugins/workspaceScoped');
 
 const proxyTokenSchema = new mongoose.Schema({
   // The actual token string: vlt_prod_xxxx...
@@ -22,8 +23,13 @@ const proxyTokenSchema = new mongoose.Schema({
     index: true,
   },
   // Scope constraints
+  scopes: {
+    type: [String],
+    default: ['proxy:admin'],
+    description: 'OAuth-style scopes: proxy:read, proxy:write, proxy:admin, tokens:read, tokens:write, audit:read',
+  },
   allowedEndpoints: {
-    type: [String], // e.g. ["POST /v1/messages", "GET /v1/models"]
+    type: [String],
     default: [],
   },
   rateLimitDaily: {
@@ -62,5 +68,7 @@ const proxyTokenSchema = new mongoose.Schema({
     default: Date.now,
   },
 });
+
+proxyTokenSchema.plugin(workspaceScopedPlugin);
 
 module.exports = mongoose.model('ProxyToken', proxyTokenSchema);

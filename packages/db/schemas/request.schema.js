@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { workspaceScopedPlugin } = require('../plugins/workspaceScoped');
 
 const accessRequestSchema = new mongoose.Schema({
   workspaceId: {
@@ -53,6 +54,11 @@ const accessRequestSchema = new mongoose.Schema({
     required: true,
     maxlength: 200,
   },
+  // CSRF protection — random state token generated at request creation
+  csrfState: {
+    type: String,
+    default: null,
+  },
   // Approval flow
   status: {
     type: String,
@@ -79,5 +85,7 @@ const accessRequestSchema = new mongoose.Schema({
     default: null,
   },
 });
+
+accessRequestSchema.plugin(workspaceScopedPlugin);
 
 module.exports = mongoose.model('AccessRequest', accessRequestSchema);

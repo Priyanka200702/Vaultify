@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { workspaceScopedPlugin } = require('../plugins/workspaceScoped');
 
 const vaultKeySchema = new mongoose.Schema({
   workspaceId: {
@@ -19,6 +20,8 @@ const vaultKeySchema = new mongoose.Schema({
       'anthropic',
       'openai',
       'gemini',
+      'groq',
+      'huggingface',
       'github',
       'gitlab',
       'aws',
@@ -42,6 +45,12 @@ const vaultKeySchema = new mongoose.Schema({
   },
   // Encrypted key payload — never store plaintext
   encryptedKey: {
+    wrappedDek: {
+      iv: { type: String, required: true },
+      authTag: { type: String, required: true },
+      ciphertext: { type: String, required: true },
+    },
+    nonceCounter: { type: Number, required: true, default: 0 },
     iv: { type: String, required: true },
     authTag: { type: String, required: true },
     ciphertext: { type: String, required: true },
@@ -63,5 +72,7 @@ const vaultKeySchema = new mongoose.Schema({
 
 // Compound index for unique key per workspace+provider+environment
 vaultKeySchema.index({ workspaceId: 1, provider: 1, environment: 1 });
+
+vaultKeySchema.plugin(workspaceScopedPlugin);
 
 module.exports = mongoose.model('VaultKey', vaultKeySchema);

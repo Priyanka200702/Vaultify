@@ -147,6 +147,29 @@ try {
 - **Tokens are scoped** — limited to specific endpoints, IPs, rate limits, and expiry windows.
 - **Zero dependencies** — no supply chain attack surface from transitive dependencies.
 
+### Automatic Retry
+
+Transient failures (HTTP 429, 502, 503, 504, network errors, and timeouts) are automatically retried with exponential backoff and jitter. Up to 3 retries with delays of ~1s, ~2s, ~4s. Non-transient errors (4xx auth failures, etc.) are never retried.
+
+### Token Redaction
+
+Use `redactToken()` to safely log or display proxy tokens without exposing the full secret:
+
+```js
+const { redactToken } = require('vaultify');
+console.log(redactToken('vlt_prod_abc123def456')); // "vlt_prod****f456"
+```
+
+### Content Security Policy (CSP)
+
+If using the Vaultify SDK in a browser environment, include your Vaultify proxy server in the `connect-src` CSP directive:
+
+```
+Content-Security-Policy: connect-src 'self' https://proxy.vaultify.dev;
+```
+
+Your vaultify proxy token must never appear in any CSP directive — it is transmitted via the `Authorization` header only.
+
 ## Requirements
 
 - Node.js 18+ (uses native `fetch`)

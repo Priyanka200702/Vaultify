@@ -1,47 +1,51 @@
-const rateLimit = require('express-rate-limit');
+const { createRateLimiter } = require('@vaultify/ratelimit');
 
-/**
- * Global rate limiter — 100 requests per minute per IP.
- */
-const globalLimiter = rateLimit({
-  windowMs: 60 * 1000,
+const globalLimiter = createRateLimiter({
+  prefix: 'rl:global',
+  windowMs: 60_000,
   max: 100,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: {
-    error: 'RATE_LIMITED',
-    message: 'Too many requests. Please try again later.',
-  },
+  keyType: 'ip',
+  message: 'Too many requests. Please try again later.',
 });
 
-/**
- * Auth endpoint rate limiter — 10 requests per minute per IP.
- * Stricter to prevent brute force attacks.
- */
-const authLimiter = rateLimit({
-  windowMs: 60 * 1000,
+const authLimiter = createRateLimiter({
+  prefix: 'rl:auth',
+  windowMs: 60_000,
   max: 10,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: {
-    error: 'RATE_LIMITED',
-    message: 'Too many authentication attempts. Please try again later.',
-  },
+  keyType: 'ip',
+  message: 'Too many authentication attempts. Please try again later.',
+  enableSlowBurn: true,
 });
 
-/**
- * Proxy endpoint rate limiter — 200 requests per minute per IP.
- * Higher limit since legitimate apps make many calls.
- */
-const proxyLimiter = rateLimit({
-  windowMs: 60 * 1000,
+const proxyLimiter = createRateLimiter({
+  prefix: 'rl:proxy',
+  windowMs: 60_000,
   max: 200,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: {
-    error: 'RATE_LIMITED',
-    message: 'Too many proxy requests. Please try again later.',
-  },
+  keyType: 'ip',
+  message: 'Too many proxy requests. Please try again later.',
 });
 
-module.exports = { globalLimiter, authLimiter, proxyLimiter };
+const userLimiter = createRateLimiter({
+  prefix: 'rl:user',
+  windowMs: 60_000,
+  max: 300,
+  keyType: 'user',
+  message: 'User rate limit exceeded.',
+});
+
+const workspaceLimiter = createRateLimiter({
+  prefix: 'rl:ws',
+  windowMs: 60_000,
+  max: 1000,
+  keyType: 'workspace',
+  message: 'Workspace rate limit exceeded.',
+  enableSlowBurn: true,
+});
+
+const proxyMultiLimiter = [
+  proxyLimiter,
+  userLimiter,
+  workspaceLimiter,
+];
+
+module.exports = { globalLimiter, authLimiter, proxyLimiter, userLimiter, workspaceLimiter, proxyMultiLimiter };

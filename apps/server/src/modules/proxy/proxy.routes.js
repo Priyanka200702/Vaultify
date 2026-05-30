@@ -1,11 +1,10 @@
 const { Router } = require('express');
 const { proxyMiddleware } = require('./proxy.middleware');
-const { proxyLimiter } = require('../../middleware/rateLimiter');
+const { proxyMultiLimiter } = require('../../middleware/rateLimiter');
 
 const router = Router();
 
-// All proxy routes — no JWT auth required (uses proxy token instead)
-// Rate limited at 200 req/min per IP
-router.all('/:provider/*', proxyLimiter, proxyMiddleware);
+// Multi-layer rate limiting: IP (200/min) + user (300/min) + workspace (1000/min)
+router.all('/:provider/*', ...proxyMultiLimiter, proxyMiddleware);
 
 module.exports = router;

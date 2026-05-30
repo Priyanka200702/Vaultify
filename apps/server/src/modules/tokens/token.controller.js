@@ -5,13 +5,14 @@ const tokenService = require('./token.service');
  */
 async function issueToken(req, res, next) {
   try {
-    const { vaultKeyId, allowedEndpoints, rateLimitDaily, allowedIps, environment, expiresInDays } = req.body;
+    const { vaultKeyId, scopes, allowedEndpoints, rateLimitDaily, allowedIps, environment, expiresInDays, provider } = req.body;
 
     if (!vaultKeyId) {
       return res.status(400).json({ error: 'VALIDATION', message: 'vaultKeyId is required' });
     }
 
     const token = await tokenService.issueToken(vaultKeyId, req.user.workspaceId, {
+      scopes,
       allowedEndpoints,
       rateLimitDaily,
       allowedIps,
@@ -19,6 +20,7 @@ async function issueToken(req, res, next) {
       expiresInDays,
       issuedTo: req.user.userId,
       issuedToName: req.user.name,
+      provider,
     });
 
     res.status(201).json({
@@ -27,6 +29,7 @@ async function issueToken(req, res, next) {
         id: token._id,
         tokenString: token.tokenString,
         environment: token.environment,
+        scopes: token.scopes,
         allowedEndpoints: token.allowedEndpoints,
         rateLimitDaily: token.rateLimitDaily,
         expiresAt: token.expiresAt,

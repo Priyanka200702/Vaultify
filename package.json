@@ -8,12 +8,20 @@
     "packages/*"
   ],
   "scripts": {
-    "dev:server": "npm run dev --workspace=apps/server",
+    "dev:admin": "npm run dev --workspace=apps/server",
+    "dev:proxy": "npm run dev --workspace=apps/proxy-service",
+    "dev:audit": "npm run dev --workspace=apps/audit-service",
     "dev:web": "npm run dev --workspace=apps/web",
+    "dev:all": "concurrently \"npm run dev:admin\" \"npm run dev:proxy\" \"npm run dev:audit\" \"npm run dev:web\"",
+    "start:proxy": "npm run start --workspace=apps/proxy-service",
+    "start:audit": "npm run start --workspace=apps/audit-service",
+    "start:admin": "npm run start --workspace=apps/server",
+    "start:all": "concurrently \"npm run start:admin\" \"npm run start:proxy\" \"npm run start:audit\"",
     "build:server": "npm run build --workspace=apps/server",
     "build:web": "npm run build --workspace=apps/web",
     "build:cli": "npm run build --workspace=apps/cli",
-    "seed": "node infra/scripts/seed.js"
+    "seed": "node infra/scripts/seed.js",
+    "setup": "node scripts/setup.js"
   },
   "keywords": [
     "security",

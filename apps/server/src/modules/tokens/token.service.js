@@ -1,5 +1,5 @@
 const { ProxyToken, AuditLog } = require('@vaultify/db');
-const { generateProxyToken, validateTokenFormat, ipAllowed, rollingWindowCount } = require('@vaultify/utils');
+const { generateProxyToken, generateProxyTokenForProvider, validateTokenFormat, ipAllowed, rollingWindowCount, checkScope, methodToScope } = require('@vaultify/utils');
 const { DEFAULT_RATE_LIMITS, DEFAULT_TOKEN_EXPIRY } = require('../../config/constants');
 
 /**
@@ -7,6 +7,7 @@ const { DEFAULT_RATE_LIMITS, DEFAULT_TOKEN_EXPIRY } = require('../../config/cons
  */
 async function issueToken(vaultKeyId, workspaceId, scope = {}) {
   const {
+    scopes,
     allowedEndpoints = [],
     rateLimitDaily = DEFAULT_RATE_LIMITS[scope.environment] || null,
     allowedIps = [],
@@ -17,7 +18,10 @@ async function issueToken(vaultKeyId, workspaceId, scope = {}) {
   } = scope;
 
   const envMap = { production: 'prod', preview: 'prev', development: 'dev' };
-  const tokenString = generateProxyToken(envMap[environment] || 'prod');
+  const envShort = envMap[environment] || 'prod';
+  const tokenString = scope.provider
+    ? generateProxyTokenForProvider(scope.provider, envShort)
+    : generateProxyToken(envShort);
 
   const expiresAt = expiresInDays
     ? new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000)
@@ -27,6 +31,7 @@ async function issueToken(vaultKeyId, workspaceId, scope = {}) {
     tokenString,
     vaultKeyId,
     workspaceId,
+    scopes: scopes || undefined,
     allowedEndpoints,
     rateLimitDaily,
     allowedIps,
@@ -73,6 +78,15 @@ async function validateToken(tokenString, requestedEndpoint, callerIp) {
 
     if (!isEndpointAllowed) {
       return { valid: false, token: null, error: `Endpoint ${requestedEndpoint} not allowed for this token`, code: 'ENDPOINT_NOT_ALLOWED' };
+    }
+  }
+
+  // Step 4a: Scopes
+  if (token.scopes && token.scopes.length > 0 && requestedEndpoint) {
+    const method = requestedEndpoint.split(' ')[0] || 'GET';
+    const requiredScope = methodToScope(method);
+    if (!checkScope(token.scopes, requiredScope)) {
+      return { valid: false, token: null, error: `Token scope '${token.scopes.join(',')}' does not include '${requiredScope}'`, code: 'SCOPE_NOT_ALLOWED' };
     }
   }
 

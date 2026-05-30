@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const { env } = require('./config/env');
 const { globalLimiter } = require('./middleware/rateLimiter');
 const { errorHandler } = require('./middleware/errorHandler');
 
@@ -13,6 +14,7 @@ const auditRoutes = require('./modules/audit/audit.routes');
 const workspaceRoutes = require('./modules/workspace/workspace.routes');
 const requestRoutes = require('./modules/access/request.routes');
 const webhookRoutes = require('./modules/webhook/webhook.routes');
+const internalRoutes = require('./modules/internal/internal.routes');
 
 const app = express();
 
@@ -60,9 +62,23 @@ app.use('/api/workspace', workspaceRoutes);
 app.use('/api/requests', requestRoutes);
 app.use('/api/webhooks', webhookRoutes);
 
+// ─────────────────────────── Internal Routes ───────────────────────────
+// Only accessible from proxy-service with INTERNAL_API_KEY
+app.use(internalRoutes);
+
 // ─────────────────────────── Proxy Routes ───────────────────────────
-// These are the core — deployed apps hit /proxy/:provider/*
-app.use('/proxy', proxyRoutes);
+// When PROXY_SERVICE_ENABLED, admin-service no longer serves proxy traffic.
+// Route all proxy calls to the standalone proxy-service instead.
+if (env.PROXY_SERVICE_ENABLED) {
+  app.all('/proxy*', (req, res) => {
+    res.status(503).json({
+      error: 'PROXY_SERVICE_DEPLOYED',
+      message: `Proxy traffic is now handled by the standalone proxy-service at ${env.PROXY_PORT ? `http://localhost:${env.PROXY_PORT}` : 'the configured proxy URL'}. Update your Vaultify SDK baseUrl to point there.`,
+    });
+  });
+} else {
+  app.use('/proxy', proxyRoutes);
+}
 
 // ─────────────────────────── 404 Handler ───────────────────────────
 

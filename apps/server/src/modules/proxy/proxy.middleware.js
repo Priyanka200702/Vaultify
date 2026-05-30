@@ -1,9 +1,39 @@
-const { proxyClient } = require('../../lib/axios');
+const crypto = require('crypto');
+const { proxyClient, STREAM_TIMEOUT, DEFAULT_TIMEOUT } = require('../../lib/axios');
 const { validateToken } = require('../tokens/token.service');
 const { getDecryptedKey } = require('../vault/vault.service');
 const { getAuthConfig, buildTargetUrl } = require('./proxy.service');
 const { logRequest } = require('@vaultify/logger');
 const { AuditLog } = require('@vaultify/db');
+const { inspectBody } = require('../../middleware/bodyInspector');
+const { sanitizeHeadersExpress, sanitizeHeaders } = require('../../middleware/responseSanitizer');
+const { lockoutCheck, wrapAnomalyCheck } = require('../../middleware/anomaly.middleware');
+const { extractCanonicalToken } = require('@vaultify/utils');
+
+function zeroKey(key) {
+  if (!key) return;
+  const buf = Buffer.from(key, 'utf-8');
+  buf.fill(0);
+  const rand = crypto.randomBytes(buf.length);
+  rand.copy(buf);
+  buf.fill(0);
+}
+
+function buildKeyBuffer(rawKey) {
+  const buf = Buffer.from(rawKey, 'utf-8');
+  const zeroed = Buffer.alloc(buf.length);
+  buf.copy(zeroed);
+  buf.fill(0);
+  return zeroed;
+}
+
+function disposeKeyBuffer(buf) {
+  if (!buf) return;
+  buf.fill(0);
+  const rand = crypto.randomBytes(buf.length);
+  rand.copy(buf);
+  buf.fill(0);
+}
 
 /**
  * 🔥 Core Proxy Middleware
@@ -17,8 +47,9 @@ const { AuditLog } = require('@vaultify/db');
  * 6. Stream response back to caller
  * 7. Log the call async, clear key from memory
  */
-async function proxyMiddleware(req, res) {
-  const startTime = Date.now();
+async function proxyMiddleware(req, res, next) {
+  try {
+    const startTime = Date.now();
   const provider = req.params.provider;
   const path = req.params[0] || '';
 
@@ -28,14 +59,13 @@ async function proxyMiddleware(req, res) {
 
   if (authHeader.startsWith('Bearer ')) {
     tokenString = authHeader.slice(7);
-  } else if (authHeader.startsWith('vlt_')) {
-    tokenString = authHeader;
   } else {
-    return res.status(401).json({
-      error: 'MISSING_TOKEN',
-      message: 'Authorization header must contain a Vaultify proxy token (vlt_...)',
-    });
+    tokenString = authHeader;
   }
+  if (!tokenString) {
+    return res.status(401).json({ error: 'MISSING_TOKEN', message: 'Authorization header must contain a Vaultify proxy token' });
+  }
+  tokenString = extractCanonicalToken(tokenString) || tokenString;
 
   // --- Step 2: Validate token (6-step pipeline) ---
   const requestedEndpoint = `${req.method} /${path}`;
@@ -51,10 +81,24 @@ async function proxyMiddleware(req, res) {
 
   const token = validation.token;
 
+  // --- Step 2a: Anomaly lockout check ---
+  const lockCheck = lockoutCheck(token._id?.toString());
+  if (lockCheck.locked) {
+    return res.status(429).json({
+      error: 'TOKEN_LOCKED',
+      message: `Token temporarily locked due to anomalous activity. Retry after ${Math.ceil(lockCheck.remainingMs / 1000)}s.`,
+      retryAfterSeconds: Math.ceil(lockCheck.remainingMs / 1000),
+    });
+  }
+
   // --- Step 3: Decrypt real API key (memory only) ---
   let realKey;
+  let keyBuf;
   try {
     realKey = await getDecryptedKey(token.vaultKeyId);
+    keyBuf = buildKeyBuffer(realKey);
+    zeroKey(realKey);
+    realKey = null;
   } catch (err) {
     return res.status(500).json({
       error: 'KEY_DECRYPT_FAILED',
@@ -65,7 +109,7 @@ async function proxyMiddleware(req, res) {
   // --- Step 4: Build target URL and inject real key ---
   const targetUrl = buildTargetUrl(provider, path);
   if (!targetUrl) {
-    realKey = null; // Clear from scope
+    disposeKeyBuffer(keyBuf);
     return res.status(400).json({
       error: 'UNKNOWN_PROVIDER',
       message: `Unknown provider: ${provider}. Supported: anthropic, openai, stripe, github`,
@@ -74,17 +118,23 @@ async function proxyMiddleware(req, res) {
 
   const authConfig = getAuthConfig(provider);
 
+  // Capture body inspection before forwarding (must happen before body is consumed)
+  const bodyInspection = inspectBody(req);
+
   // Build forwarded headers — strip proxy token, inject real key
   const forwardHeaders = { ...req.headers };
   delete forwardHeaders.host;
-  delete forwardHeaders['content-length']; // Let axios recalculate
+  delete forwardHeaders['content-length'];
   delete forwardHeaders.authorization;
   delete forwardHeaders['x-api-key'];
 
-  // Set the real auth header for the provider
-  forwardHeaders[authConfig.header] = `${authConfig.prefix}${realKey}`;
+  const authHeaderValue = `${authConfig.prefix}${keyBuf.toString('utf-8')}`;
+  forwardHeaders[authConfig.header] = authHeaderValue;
+  disposeKeyBuffer(keyBuf);
 
   // --- Step 5: Forward request to provider ---
+  const isStreaming = !!(req.body && req.body.stream === true);
+  const requestTimeout = isStreaming ? STREAM_TIMEOUT : DEFAULT_TIMEOUT;
   let providerResponse;
   try {
     providerResponse = await proxyClient({
@@ -93,13 +143,12 @@ async function proxyMiddleware(req, res) {
       headers: forwardHeaders,
       data: req.body,
       params: req.query,
-      responseType: 'arraybuffer', // Handle all response types
+      responseType: 'arraybuffer',
+      timeout: requestTimeout,
     });
   } catch (err) {
-    realKey = null; // Clear from scope
     const latencyMs = Date.now() - startTime;
 
-    // Log the failed attempt
     logRequest(AuditLog, {
       tokenId: token._id,
       tokenString: token.tokenString,
@@ -109,6 +158,9 @@ async function proxyMiddleware(req, res) {
       sourceIp: callerIp,
       endpoint: requestedEndpoint,
       provider,
+      requestBodySnippet: bodyInspection.snippet,
+      requestBodyFormat: bodyInspection.format,
+      injectionPatterns: bodyInspection.patterns,
       statusCode: err.response?.status || 502,
       latencyMs,
       requestSize: req.headers['content-length'] ? parseInt(req.headers['content-length']) : 0,
@@ -116,10 +168,7 @@ async function proxyMiddleware(req, res) {
       environment: token.environment,
     });
 
-    // Check for anomalies on error too
-    setImmediate(() => {
-      checkAnomalies(token._id, token.issuedTo, callerIp, requestedEndpoint, err.response?.status || 502);
-    });
+    wrapAnomalyCheck(token._id?.toString(), token.issuedTo, callerIp, requestedEndpoint, err.response?.status || 502);
 
     return res.status(502).json({
       error: 'PROXY_FORWARD_FAILED',
@@ -127,20 +176,13 @@ async function proxyMiddleware(req, res) {
     });
   }
 
-  // --- Step 6: Stream response back ---
-  realKey = null; // Clear real key from memory immediately
-
-  // Forward response headers
-  const responseHeaders = providerResponse.headers;
-  for (const [key, value] of Object.entries(responseHeaders)) {
-    if (!['transfer-encoding', 'connection', 'content-encoding'].includes(key.toLowerCase())) {
-      res.setHeader(key, value);
-    }
-  }
+  // --- Step 6: Stream response back with sanitized headers ---
+  const sanitizedResHeaders = sanitizeHeaders(providerResponse.headers);
+  sanitizeHeadersExpress(providerResponse.headers, res);
 
   res.status(providerResponse.status).send(Buffer.from(providerResponse.data));
 
-  // --- Step 7: Log async (non-blocking) ---
+  // --- Step 7: Log async (non-blocking) with body inspection + sanitized headers ---
   const latencyMs = Date.now() - startTime;
   logRequest(AuditLog, {
     tokenId: token._id,
@@ -151,12 +193,21 @@ async function proxyMiddleware(req, res) {
     sourceIp: callerIp,
     endpoint: requestedEndpoint,
     provider,
+    requestBodySnippet: bodyInspection.snippet,
+    requestBodyFormat: bodyInspection.format,
+    injectionPatterns: bodyInspection.patterns,
+    responseHeaders: sanitizedResHeaders,
     statusCode: providerResponse.status,
     latencyMs,
     requestSize: req.headers['content-length'] ? parseInt(req.headers['content-length']) : 0,
     responseSize: providerResponse.data ? providerResponse.data.length : 0,
     environment: token.environment,
   });
+
+  wrapAnomalyCheck(token._id?.toString(), token.issuedTo, callerIp, requestedEndpoint, providerResponse.status);
+  } catch (err) {
+    next(err);
+  }
 }
 
 module.exports = { proxyMiddleware };

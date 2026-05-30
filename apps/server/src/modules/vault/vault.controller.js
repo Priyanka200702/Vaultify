@@ -70,7 +70,8 @@ async function rotateKey(req, res, next) {
       return res.status(400).json({ error: 'VALIDATION', message: 'newRawKey is required' });
     }
 
-    const result = await vaultService.rotateKey(id, newRawKey);
+    const workspaceId = await resolveWorkspaceId(req);
+    const result = await vaultService.rotateKey(id, newRawKey, workspaceId);
     res.json({ message: 'Key rotated successfully. All proxy tokens continue working.', key: result });
   } catch (err) {
     next(err);
@@ -83,7 +84,8 @@ async function rotateKey(req, res, next) {
 async function getKeyTokenCount(req, res, next) {
   try {
     const { id } = req.params;
-    const count = await vaultService.getActiveTokenCount(id);
+    const workspaceId = await resolveWorkspaceId(req);
+    const count = await vaultService.getActiveTokenCount(id, workspaceId);
     res.json({ activeTokens: count });
   } catch (err) {
     next(err);
@@ -96,7 +98,8 @@ async function getKeyTokenCount(req, res, next) {
 async function deleteKey(req, res, next) {
   try {
     const { id } = req.params;
-    const result = await vaultService.deleteKey(id);
+    const workspaceId = await resolveWorkspaceId(req);
+    const result = await vaultService.deleteKey(id, workspaceId);
 
     if (!result) {
       return res.status(404).json({ error: 'NOT_FOUND', message: 'Vault key not found' });

@@ -38,7 +38,7 @@
  * @module vaultify
  */
 
-const { VaultifyClient } = require('./lib/client');
+const { VaultifyClient, redactToken } = require('./lib/client');
 const { VaultifyError } = require('./lib/errors');
 
 /**
@@ -56,4 +56,4 @@ function createClient(proxyToken, opts = {}) {
   return new VaultifyClient(proxyToken, opts);
 }
 
-module.exports = { createClient, VaultifyClient, VaultifyError };
+module.exports = { createClient, VaultifyClient, VaultifyError, redactToken };

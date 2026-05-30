@@ -1,22 +1,21 @@
 const jwt = require('jsonwebtoken');
+const { generateJti } = require('./jtiStore');
 
-/**
- * Signs a JWT token.
- * @param {Object} payload - Data to encode in the token.
- * @param {string} secret - The signing secret.
- * @param {string} expiresIn - Expiration duration (e.g. '1h', '7d').
- * @returns {string} The signed JWT string.
- */
-function signToken(payload, secret, expiresIn = '1h') {
-  return jwt.sign(payload, secret, { expiresIn });
+function signToken(payload, secret, expiresIn = '1h', binding = {}) {
+  const jti = generateJti();
+  const token = jwt.sign(
+    {
+      ...payload,
+      jti,
+      ip_hash: binding.ipHash || null,
+      ua_hash: binding.uaHash || null,
+    },
+    secret,
+    { expiresIn }
+  );
+  return token;
 }
 
-/**
- * Verifies and decodes a JWT token.
- * @param {string} token - The JWT string.
- * @param {string} secret - The signing secret.
- * @returns {{ valid: boolean, decoded: Object | null, error: string | null }}
- */
 function verifyToken(token, secret) {
   try {
     const decoded = jwt.verify(token, secret);
@@ -26,4 +25,26 @@ function verifyToken(token, secret) {
   }
 }
 
-module.exports = { signToken, verifyToken };
+function checkTokenBinding(decoded, req) {
+  if (!decoded) return { valid: false, reason: 'No token payload' };
+
+  if (decoded.ip_hash) {
+    const clientIp = (req.headers['x-forwarded-for'] || req.ip || '').split(',')[0].trim();
+    const ipHash = require('crypto').createHash('sha256').update(clientIp).digest('hex').slice(0, 16);
+    if (ipHash !== decoded.ip_hash) {
+      return { valid: false, reason: 'IP address changed — token binding violated' };
+    }
+  }
+
+  if (decoded.ua_hash) {
+    const ua = req.headers['user-agent'] || '';
+    const uaHash = require('crypto').createHash('sha256').update(ua).digest('hex').slice(0, 16);
+    if (uaHash !== decoded.ua_hash) {
+      return { valid: false, reason: 'User-Agent changed — token binding violated' };
+    }
+  }
+
+  return { valid: true };
+}
+
+module.exports = { signToken, verifyToken, checkTokenBinding, generateJti };

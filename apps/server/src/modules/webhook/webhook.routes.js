@@ -17,7 +17,7 @@ const router = express.Router();
  *   "repository": { "full_name": "owner/repo" }
  * }
  */
-router.post('/github-pr-merged', async (req, res) => {
+router.post('/github-pr-merged', async (req, res, next) => {
   try {
     const { action, pull_request, repository } = req.body;
 
@@ -52,16 +52,11 @@ router.post('/github-pr-merged', async (req, res) => {
       repo: repoName,
     });
   } catch (err) {
-    console.error('[Webhook] Error:', err.message);
-    res.status(500).json({ error: 'Webhook processing failed' });
+    next(err);
   }
 });
 
-/**
- * POST /api/webhooks/vercel-deployment
- * Optional: Vercel webhook to track deployment events.
- */
-router.post('/vercel-deployment', async (req, res) => {
+router.post('/vercel-deployment', async (req, res, next) => {
   try {
     const { type, payload } = req.body;
 
@@ -72,8 +67,7 @@ router.post('/vercel-deployment', async (req, res) => {
 
     res.status(200).json({ message: 'Webhook received' });
   } catch (err) {
-    console.error('[Webhook] Error:', err.message);
-    res.status(500).json({ error: 'Webhook processing failed' });
+    next(err);
   }
 });
 
