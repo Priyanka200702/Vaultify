@@ -265,26 +265,27 @@ const openai = new OpenAI({
 
 ## Summary Table
 
-| ID | Severity | Area | Summary |
-|---|---|---|---|
-| P0.1 | 🔴 Crash | Server | `connectDB()` never imported in proxy & audit services |
-| P0.2 | 🔴 Crash | Server | No `uncaughtException`/`unhandledRejection` handlers in any service |
-| P0.3 | 🔴 Crash | DB | No MongoDB disconnect/reconnect listeners |
-| P0.4 | 🔴 Error | Proxy | `proxyMiddleware` missing `next` param — errors are unhandled rejections |
-| P0.5 | 🔴 Error | Proxy | Fire-and-forget audit logging has no `.catch()` |
-| P0.6 | 🔴 Error | Proxy | `token.service.js` no try-catch around DB calls |
-| P1.1 | 🟠 Security | Zero Trust | Standalone proxy has no anomaly detection |
-| P1.2 | 🟠 Security | Zero Trust | Anomaly scoring is async (post-response), not a pre-flight gate |
-| P1.3 | 🟠 Security | Zero Trust | Anomaly state is in-memory, lost on restart |
-| P1.4 | 🟠 Security | Zero Trust | Non-proxy scopes (`tokens:read`, `audit:read`) defined but never enforced |
-| P1.5 | 🔴 Security | Insider | `ENCRYPTION_KEY` on same server as DB — full compromise if both accessed |
-| P1.6 | 🟠 UX | SDK | `vlt_` prefix rejected by all provider SDKs |
-| P1.7 | 🟠 Security | Architecture | `PROXY_SERVICE_ENABLED=false` by default — single-process mode |
-| P2.1 | 🟡 Scope | Scopes | HTTP-verb-only scope check, not resource-aware |
-| P2.2 | 🟡 Rate | Rate limit | Not per-provider, cross-provider interference |
-| P3.1 | ⚪ Quality | Routes | OAuth/webhook routes swallow errors |
-| P3.2 | ⚪ Quality | Anomaly | `MAD_THRESHOLD` not imported — scoring silently fails |
-| P3.3 | ⚪ Quality | Proxy | `err.status` not checked in global handler |
-| P3.4 | ⚪ Quality | Audit | No 404 handler, leaks `err.message` |
-| P3.5 | ⚪ Quality | All | No shared `asyncHandler` wrapper |
-| P3.6 | ⚪ Quality | Proxy | Key decryption error returns 500 instead of forwarding |
+| ID | Severity | Area | Summary | Status |
+|---|---|---|---|---|
+| P0.1 | 🔴 Crash | Server | `connectDB()` never imported in proxy & audit services | ✅ Fixed |
+| P0.2 | 🔴 Crash | Server | No `uncaughtException`/`unhandledRejection` handlers in any service | ✅ Fixed |
+| P0.3 | 🔴 Crash | DB | No MongoDB disconnect/reconnect listeners | ✅ Fixed |
+| P0.4 | 🔴 Error | Proxy | `proxyMiddleware` missing `next` param — errors are unhandled rejections | ✅ Fixed |
+| P0.5 | 🔴 Error | Proxy | Fire-and-forget audit logging has no `.catch()` | ✅ Fixed |
+| P0.6 | 🔴 Error | Proxy | `token.service.js` no try-catch around DB calls | ✅ Fixed |
+| P1.1 | 🟠 Security | Zero Trust | Standalone proxy has no anomaly detection | ✅ Fixed — `@vaultify/anomaly` shared package |
+| P1.2 | 🟠 Security | Zero Trust | Anomaly scoring is async (post-response), not a pre-flight gate | ✅ Fixed — `preFlightCheck()` runs synchronously before key decryption |
+| P1.3 | 🟠 Security | Zero Trust | Anomaly state is in-memory, lost on restart | ✅ Fixed — `RedisStore` available, set `REDIS_URL` to enable |
+| P1.4 | 🟠 Security | Zero Trust | Non-proxy scopes (`tokens:read`, `audit:read`) defined but never enforced | ✅ Fixed — `requireScope()` middleware wired into all admin routes |
+| P1.5 | 🔴 Security | Insider | `ENCRYPTION_KEY` on same server as DB — full compromise if both accessed | ⚠️ Code ready — KMS provider abstraction exists (`local`/`aws-kms`/`gcp-kms`), deploy with `KMS_PROVIDER=aws-kms` |
+| P1.6 | 🟠 UX | SDK | `vlt_` prefix rejected by all provider SDKs | ✅ Fixed — provider-prefixed tokens (`sk-vlt-`, `sk-ant-vlt-`, etc.) |
+| P1.7 | 🟠 Security | Architecture | `PROXY_SERVICE_ENABLED=false` by default — single-process mode | ✅ Fixed — default flipped to `true` |
+| P2.1 | 🟡 Scope | Scopes | HTTP-verb-only scope check, not resource-aware | ✅ Fixed — billing/admin/destructive endpoints → `proxy:admin`, AI endpoints → `proxy:write`, reads → `proxy:read` |
+| P2.2 | 🟡 Rate | Rate limit | Not per-provider, cross-provider interference | ✅ Fixed — rate limit keys include provider dimension |
+| P3.1 | ⚪ Quality | Routes | OAuth/webhook routes swallow errors | ✅ Fixed — wrapped in `asyncHandler()` |
+| P3.2 | ⚪ Quality | Anomaly | `MAD_THRESHOLD` not imported — scoring silently fails | ✅ Fixed — refactored into `@vaultify/anomaly` package |
+| P3.3 | ⚪ Quality | Proxy | `err.status` not checked in global handler | ✅ Fixed |
+| P3.4 | ⚪ Quality | Audit | No 404 handler, leaks `err.message` | ✅ Fixed |
+| P3.5 | ⚪ Quality | All | No shared `asyncHandler` wrapper | ✅ Fixed — `@vaultify/utils` exports `asyncHandler`, used in 16+ files |
+| P3.6 | ⚪ Quality | Proxy | Key decryption error returns 500 instead of forwarding | ✅ Fixed — errors flow to `next(err)` / global handler |
+

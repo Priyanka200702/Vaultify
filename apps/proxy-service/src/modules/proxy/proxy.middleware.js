@@ -6,7 +6,7 @@ const { validateToken } = require('../tokens/token.service');
 const { getAuthConfig, buildTargetUrl } = require('./proxy.service');
 const { inspectBody } = require('../../middleware/bodyInspector');
 const { sanitizeHeaders, sanitizeHeadersExpress } = require('../../middleware/responseSanitizer');
-const { lockoutCheck, wrapAnomalyCheck } = require('../../middleware/anomaly.middleware');
+const { lockoutCheck, wrapAnomalyCheck, preFlightCheck } = require('../../middleware/anomaly.middleware');
 const { extractCanonicalToken } = require('@vaultify/utils');
 
 function buildKeyBuffer(rawKey) {
@@ -50,14 +50,18 @@ async function proxyMiddleware(req, res, next) {
     if (!validation.valid) return res.status(403).json({ error: validation.code, message: validation.error });
     const token = validation.token;
 
-    // Synchronous lockout check — pre-flight Zero Trust gate
+    // Synchronous pre-flight Zero Trust gate — scores request BEFORE key decryption
     const tokenId = token._id?.toString();
-    const lockCheck = lockoutCheck(tokenId);
-    if (lockCheck.locked) {
+    const preFlightFeatures = {
+      endpoint: requestedEndpoint,
+      requestSize: req.headers['content-length'] ? parseInt(req.headers['content-length']) : 0,
+    };
+    const preFlight = preFlightCheck(tokenId, preFlightFeatures);
+    if (preFlight.locked) {
       return res.status(429).json({
         error: 'TOKEN_LOCKED',
-        message: `Token temporarily locked due to anomalous activity. Retry after ${Math.ceil(lockCheck.remainingMs / 1000)}s.`,
-        retryAfterSeconds: Math.ceil(lockCheck.remainingMs / 1000),
+        message: `Token temporarily locked due to anomalous activity. Retry after ${Math.ceil(preFlight.remainingMs / 1000)}s.`,
+        retryAfterSeconds: Math.ceil(preFlight.remainingMs / 1000),
       });
     }
 

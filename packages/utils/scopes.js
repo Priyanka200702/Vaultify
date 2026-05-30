@@ -34,11 +34,39 @@ const SCOPE_HIERARCHY = Object.freeze({
 
 // Endpoint → scope overrides for resource-aware access control.
 // Keys are regex patterns matched against "METHOD /path" (case-insensitive).
-// Order matters — first match wins.
+// Order matters — first match wins. More specific patterns go first.
 const ENDPOINT_SCOPE_MAP = [
-  // Streaming endpoints typically carry sensitive data in responses — proxy:write
+  // ─── Sensitive / Admin operations → proxy:admin ───
+  // Billing & usage — these should never be accessible with just proxy:write
+  { pattern: /^(get|post|put|patch|delete)\s+\/v\d+\/billing\//i, scope: SCOPES.PROXY_ADMIN },
+  { pattern: /^(get|post|put|patch|delete)\s+\/v\d+\/usage/i, scope: SCOPES.PROXY_ADMIN },
+  { pattern: /^(get|post|put|patch|delete)\s+\/v\d+\/costs/i, scope: SCOPES.PROXY_ADMIN },
+  { pattern: /^(get|post|put|patch|delete)\s+\/v\d+\/organization\//i, scope: SCOPES.PROXY_ADMIN },
+  { pattern: /^(get|post|put|patch|delete)\s+\/v\d+\/account\//i, scope: SCOPES.PROXY_ADMIN },
+  // Stripe-specific sensitive endpoints
+  { pattern: /^post\s+\/v\d+\/charges/i, scope: SCOPES.PROXY_ADMIN },
+  { pattern: /^post\s+\/v\d+\/refunds/i, scope: SCOPES.PROXY_ADMIN },
+  { pattern: /^post\s+\/v\d+\/payouts/i, scope: SCOPES.PROXY_ADMIN },
+  { pattern: /^post\s+\/v\d+\/transfers/i, scope: SCOPES.PROXY_ADMIN },
+  { pattern: /^(post|delete)\s+\/v\d+\/customers/i, scope: SCOPES.PROXY_ADMIN },
+  { pattern: /^(post|delete)\s+\/v\d+\/subscriptions/i, scope: SCOPES.PROXY_ADMIN },
+  // Key/secret management
+  { pattern: /^(post|delete)\s+\/v\d+\/api-?keys/i, scope: SCOPES.PROXY_ADMIN },
+  { pattern: /^(post|delete)\s+\/v\d+\/secrets/i, scope: SCOPES.PROXY_ADMIN },
+  // Destructive operations — DELETE on any resource needs admin
+  { pattern: /^delete\s+\/v\d+\/fine-tuning\//i, scope: SCOPES.PROXY_ADMIN },
+  { pattern: /^delete\s+\/v\d+\/files\//i, scope: SCOPES.PROXY_ADMIN },
+  { pattern: /^delete\s+\/v\d+\/assistants\//i, scope: SCOPES.PROXY_ADMIN },
+  { pattern: /^delete\s+\/v\d+\/vector-stores\//i, scope: SCOPES.PROXY_ADMIN },
+  { pattern: /^delete\s+\/v\d+\/threads\//i, scope: SCOPES.PROXY_ADMIN },
+  // GitHub repo/org admin
+  { pattern: /^(put|patch|delete)\s+\/repos\/[^/]+\/[^/]+$/i, scope: SCOPES.PROXY_ADMIN },
+  { pattern: /^(post|put|patch|delete)\s+\/orgs\//i, scope: SCOPES.PROXY_ADMIN },
+
+  // ─── Normal AI write operations → proxy:write ───
   { pattern: /^post\s+\/v\d+\/chat\/completions/i, scope: SCOPES.PROXY_WRITE },
   { pattern: /^post\s+\/v\d+\/messages/i, scope: SCOPES.PROXY_WRITE },
+  { pattern: /^post\s+\/v\d+\/completions/i, scope: SCOPES.PROXY_WRITE },
   { pattern: /^post\s+\/v\d+\/embeddings/i, scope: SCOPES.PROXY_WRITE },
   { pattern: /^post\s+\/v\d+\/images\//i, scope: SCOPES.PROXY_WRITE },
   { pattern: /^post\s+\/v\d+\/audio\//i, scope: SCOPES.PROXY_WRITE },
@@ -48,11 +76,27 @@ const ENDPOINT_SCOPE_MAP = [
   { pattern: /^post\s+\/v\d+\/vector-stores\//i, scope: SCOPES.PROXY_WRITE },
   { pattern: /^post\s+\/v\d+\/assistants\//i, scope: SCOPES.PROXY_WRITE },
   { pattern: /^post\s+\/v\d+\/threads\//i, scope: SCOPES.PROXY_WRITE },
-  { pattern: /^post\s+\/v\d+\/completions/i, scope: SCOPES.PROXY_WRITE },
+  { pattern: /^post\s+\/v\d+\/files/i, scope: SCOPES.PROXY_WRITE },
+  // GitHub PR/issue creation
+  { pattern: /^post\s+\/repos\/[^/]+\/[^/]+\/(issues|pulls|comments)/i, scope: SCOPES.PROXY_WRITE },
+
+  // ─── Read operations → proxy:read ───
+  { pattern: /^get\s+\/v\d+\/models/i, scope: SCOPES.PROXY_READ },
+  { pattern: /^get\s+\/v\d+\/files/i, scope: SCOPES.PROXY_READ },
+  { pattern: /^get\s+\/v\d+\/fine-tuning\//i, scope: SCOPES.PROXY_READ },
+  { pattern: /^get\s+\/v\d+\/assistants/i, scope: SCOPES.PROXY_READ },
+  { pattern: /^get\s+\/v\d+\/threads/i, scope: SCOPES.PROXY_READ },
+  { pattern: /^get\s+\/v\d+\/vector-stores/i, scope: SCOPES.PROXY_READ },
+  { pattern: /^get\s+\/v\d+\/batches/i, scope: SCOPES.PROXY_READ },
+  { pattern: /^get\s+\/repos\//i, scope: SCOPES.PROXY_READ },
+  { pattern: /^get\s+\/user/i, scope: SCOPES.PROXY_READ },
+
+  // ─── Catch-all fallbacks by HTTP verb ───
+  { pattern: /^(get|head|options)\s+/, scope: SCOPES.PROXY_READ },
   { pattern: /^post\s+/, scope: SCOPES.PROXY_WRITE },
   { pattern: /^put\s+/, scope: SCOPES.PROXY_WRITE },
   { pattern: /^patch\s+/, scope: SCOPES.PROXY_WRITE },
-  { pattern: /^delete\s+/, scope: SCOPES.PROXY_WRITE },
+  { pattern: /^delete\s+/, scope: SCOPES.PROXY_ADMIN },
 ];
 
 function checkScope(tokenScopes, requiredScope) {

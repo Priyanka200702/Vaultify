@@ -6,6 +6,11 @@ const LOCKOUT_THRESHOLD = 5;
 const LOCKOUT_WINDOW_MS = 300_000;
 const LOCKOUT_DURATION_MS = [60_000, 300_000, 900_000, 3600_000];
 
+// ─── Pre-flight scoring thresholds ───
+// A lower bar than MAD_THRESHOLD — flags requests that look suspicious
+// but haven't yet accumulated enough strikes for a full lockout.
+const PREFLIGHT_SCORE_THRESHOLD = 4.5;
+
 class MemoryStore {
   constructor() {
     this._data = new Map();
@@ -31,6 +36,77 @@ class MemoryStore {
 
   clear() {
     this._data.clear();
+  }
+}
+
+/**
+ * Optional Redis-backed store for anomaly state persistence across restarts.
+ * Falls back to MemoryStore if Redis is unavailable.
+ *
+ * Uses an in-memory write-through cache to keep lookups synchronous (required
+ * for pre-flight checks). Redis is synced in the background.
+ *
+ * Usage:
+ *   const Redis = require('ioredis');
+ *   const redis = new Redis(process.env.REDIS_URL);
+ *   const store = new RedisStore(redis, 'vaultify:anomaly');
+ *   await store.loadFromRedis();
+ *   const detector = new AnomalyDetector({ store });
+ */
+class RedisStore {
+  constructor(redisClient, keyPrefix = 'vaultify:anomaly') {
+    this._redis = redisClient;
+    this._prefix = keyPrefix;
+    this._cache = new Map();           // local mirror for sync reads
+    this._ttl = 7200;                  // Redis key TTL in seconds (2 hours)
+  }
+
+  /** Hydrate the in-memory cache from Redis on startup */
+  async loadFromRedis() {
+    try {
+      const keys = await this._redis.keys(`${this._prefix}:*`);
+      for (const key of keys) {
+        const raw = await this._redis.get(key);
+        if (raw) {
+          const localKey = key.slice(this._prefix.length + 1);
+          this._cache.set(localKey, JSON.parse(raw));
+        }
+      }
+    } catch (err) {
+      console.error('[AnomalyStore] Redis load failed, using empty cache:', err.message);
+    }
+  }
+
+  get(key) {
+    return this._cache.get(key);
+  }
+
+  set(key, value) {
+    this._cache.set(key, value);
+    // Async write-through — don't block the hot path
+    this._redis.set(
+      `${this._prefix}:${key}`,
+      JSON.stringify(value),
+      'EX',
+      this._ttl
+    ).catch(err => console.error('[AnomalyStore] Redis set error:', err.message));
+  }
+
+  delete(key) {
+    this._cache.delete(key);
+    this._redis.del(`${this._prefix}:${key}`)
+      .catch(err => console.error('[AnomalyStore] Redis del error:', err.message));
+  }
+
+  *entries(prefix) {
+    for (const [key, value] of this._cache) {
+      if (key.startsWith(prefix)) yield [key, value];
+    }
+  }
+
+  clear() {
+    this._cache.clear();
+    // Don't wipe Redis on clear — only clear the in-memory cache
   }
 }
 
@@ -163,8 +239,14 @@ class AnomalyDetector {
 
 module.exports = AnomalyDetector;
 module.exports.MemoryStore = MemoryStore;
+module.exports.RedisStore = RedisStore;
 module.exports.MAD_THRESHOLD = MAD_THRESHOLD;
+module.exports.PREFLIGHT_SCORE_THRESHOLD = PREFLIGHT_SCORE_THRESHOLD;
 module.exports.createMiddleware = function createMiddleware(detector) {
+  /**
+   * Async post-response anomaly recording.
+   * Records features and updates lockout strikes in the background.
+   */
   function wrapAnomalyCheck(tokenId, issuedTo, callerIp, endpoint, statusCode) {
     setImmediate(async () => {
       try {
@@ -181,9 +263,47 @@ module.exports.createMiddleware = function createMiddleware(detector) {
     });
   }
 
+  /**
+   * Synchronous lockout check — returns { locked, remainingMs }.
+   */
   function lockoutCheck(tokenId) {
     return detector.checkLockout(tokenId);
   }
 
-  return { wrapAnomalyCheck, lockoutCheck, detector };
+  /**
+   * Synchronous pre-flight anomaly gate.
+   * Scores the incoming request against the token's baseline BEFORE
+   * key decryption or provider forwarding.
+   *
+   * Returns { flagged: boolean, score: number, locked: boolean, remainingMs?: number }
+   *   - flagged: true if the current request's features deviate significantly
+   *   - locked: true if the token is under active lockout (from prior strikes)
+   *
+   * This runs synchronously against in-memory state, so it adds negligible latency.
+   */
+  function preFlightCheck(tokenId, features) {
+    // First check hard lockout
+    const lock = detector.checkLockout(tokenId);
+    if (lock.locked) {
+      return { flagged: true, score: Infinity, locked: true, remainingMs: lock.remainingMs };
+    }
+
+    // Score current request against baseline
+    const score = detector.score(tokenId, features);
+    const flagged = score > PREFLIGHT_SCORE_THRESHOLD;
+
+    if (flagged) {
+      // Immediately record the anomaly so strikes accumulate in real-time
+      const result = detector.recordAnomaly(tokenId);
+      console.warn(`[ANOMALY:PREFLIGHT] token=${tokenId} score=${score.toFixed(2)} strike=${result.strike} locked=${result.locked}`);
+      if (result.locked) {
+        const recheck = detector.checkLockout(tokenId);
+        return { flagged: true, score, locked: true, remainingMs: recheck.remainingMs || LOCKOUT_DURATION_MS[0] };
+      }
+    }
+
+    return { flagged, score, locked: false };
+  }
+
+  return { wrapAnomalyCheck, lockoutCheck, preFlightCheck, detector };
 };

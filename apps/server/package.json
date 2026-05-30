@@ -11,8 +11,12 @@
   },
   "dependencies": {
     "@vaultify/anomaly": "file:../../packages/anomaly",
+    "@vaultify/auth": "file:../../packages/auth",
+    "@vaultify/crypto": "file:../../packages/crypto",
     "@vaultify/db": "file:../../packages/db",
+    "@vaultify/logger": "file:../../packages/logger",
     "@vaultify/ratelimit": "file:../../packages/ratelimit",
+    "@vaultify/utils": "file:../../packages/utils",
     "axios": "^1.6.0",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",

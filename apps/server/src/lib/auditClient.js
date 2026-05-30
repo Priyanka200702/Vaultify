@@ -13,33 +13,42 @@ function getClient() {
   });
 }
 
+async function request(path, params, options = {}) {
+  try {
+    const { data } = await getClient().get(path, { params, ...options });
+    return data;
+  } catch (err) {
+    if (err.code === 'ECONNREFUSED' || err.code === 'ECONNRESET') {
+      const error = new Error('Audit service is not available. Ensure the audit-service is running.');
+      error.statusCode = 503;
+      error.expose = true;
+      throw error;
+    }
+    if (err.response) {
+      const error = new Error(err.response.data?.message || 'Audit service error');
+      error.statusCode = err.response.status;
+      error.expose = true;
+      throw error;
+    }
+    throw err;
+  }
+}
+
 async function queryLogs(workspaceId, filters = {}) {
-  const { data } = await getClient().get('/api/audit', {
-    params: { workspaceId, ...filters },
-  });
-  return data;
+  return request('/api/audit', { workspaceId, ...filters });
 }
 
 async function getStats(workspaceId) {
-  const { data } = await getClient().get('/api/audit/stats', {
-    params: { workspaceId },
-  });
-  return data;
+  return request('/api/audit/stats', { workspaceId });
 }
 
 async function verifyChain(workspaceId) {
-  const { data } = await getClient().get('/api/audit/verify', {
-    params: { workspaceId },
-  });
-  return data;
+  return request('/api/audit/verify', { workspaceId });
 }
 
 async function exportLogs(workspaceId, query = {}) {
-  const { data } = await getClient().get('/api/audit/export', {
-    params: { workspaceId, ...query },
-    responseType: query.format === 'csv' ? 'text' : 'json',
-  });
-  return data;
+  const options = query.format === 'csv' ? { responseType: 'text' } : {};
+  return request('/api/audit/export', { workspaceId, ...query }, options);
 }
 
 module.exports = { queryLogs, getStats, verifyChain, exportLogs };
