@@ -14,7 +14,7 @@ const envList = require('./commands/envList');
 program
   .name('vaultify')
   .description('Vaultify CLI - Secure API key proxy for Vercel deployments')
-  .version('1.0.0');
+  .version(require('../package.json').version);
 
 program
   .command('login')

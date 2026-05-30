@@ -28,31 +28,31 @@ async function register(req, res, next) {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // Create workspace first
-    const workspace = await Workspace.create({
-      name: `${name}'s Workspace`,
-      ownerId: null, // Will update after user creation
-      members: [],
-    });
-
-    // Create user
+    // Create user first (workspaceId will be set after workspace is created)
     const user = await User.create({
       email: email.toLowerCase(),
       password: hashedPassword,
       name,
-      workspaceId: workspace._id,
       role: 'owner',
     });
 
-    // Update workspace with owner info
-    workspace.ownerId = user._id;
-    workspace.members.push({
-      userId: user._id,
-      email: user.email,
-      name: user.name,
-      role: 'owner',
+    // Create workspace with ownerId set to the newly created user
+    const workspace = await Workspace.create({
+      name: `${name}'s Workspace`,
+      ownerId: user._id,
+      members: [
+        {
+          userId: user._id,
+          email: user.email,
+          name: user.name,
+          role: 'owner',
+        },
+      ],
     });
-    await workspace.save();
+
+    // Update user with workspace reference
+    user.workspaceId = workspace._id;
+    await user.save();
 
     // Generate tokens
     const payload = { userId: user._id, email: user.email, name: user.name, role: user.role, workspaceId: workspace._id };

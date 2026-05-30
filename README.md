@@ -310,7 +310,7 @@ vaultify/
 ### 1. Clone & Install
 
 ```bash
-git clone https://github.com/your-org/vaultify.git
+git clone https://github.com/vivaswanghosh/Vaultify.git
 cd vaultify
 npm install          # installs all workspace packages
 ```
@@ -520,4 +520,4 @@ For local testing after running the seed script:
 
 ## 📋 License
 
-MIT © 2025 Vaultify Team
+MIT © 2026 Vaultify Team

@@ -54,8 +54,8 @@ Publish two npm packages from the existing monorepo:
   "engines": { "node": ">=18" },
   "keywords": ["vaultify", "proxy", "api-keys", "security", "anthropic", "openai"],
   "license": "MIT",
-  "repository": { "type": "git", "url": "https://github.com/your-org/vaultify" },
-  "homepage": "https://github.com/your-org/vaultify#readme"
+  "repository": { "type": "git", "url": "https://github.com/vivaswanghosh/Vaultify" },
+  "homepage": "https://github.com/vivaswanghosh/Vaultify#readme"
 }
 ```
 Zero runtime dependencies — uses native `fetch` (Node 18+) and `ReadableStream`.

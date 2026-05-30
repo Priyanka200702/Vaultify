@@ -31,12 +31,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-org/vaultify",
+    "url": "https://github.com/vivaswanghosh/Vaultify",
     "directory": "apps/cli"
   },
-  "homepage": "https://github.com/your-org/vaultify#-use-the-cli",
+  "homepage": "https://github.com/vivaswanghosh/Vaultify#-use-the-cli",
   "bugs": {
-    "url": "https://github.com/your-org/vaultify/issues"
+    "url": "https://github.com/vivaswanghosh/Vaultify/issues"
   },
   "dependencies": {
     "commander": "11.1.0",

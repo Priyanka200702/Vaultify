@@ -33,11 +33,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-org/vaultify",
+    "url": "https://github.com/vivaswanghosh/Vaultify",
     "directory": "packages/vaultify"
   },
-  "homepage": "https://github.com/your-org/vaultify#readme",
+  "homepage": "https://github.com/vivaswanghosh/Vaultify#readme",
   "bugs": {
-    "url": "https://github.com/your-org/vaultify/issues"
+    "url": "https://github.com/vivaswanghosh/Vaultify/issues"
   }
 }

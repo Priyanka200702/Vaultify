@@ -136,4 +136,4 @@ MIT © Vaultify Team
 
 ---
 
-Part of the [Vaultify](https://github.com/your-org/vaultify) project.
+Part of the [Vaultify](https://github.com/vivaswanghosh/Vaultify) project.

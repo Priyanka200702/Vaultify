@@ -150,7 +150,7 @@ try {
 ## Requirements
 
 - Node.js 18+ (uses native `fetch`)
-- A running [Vaultify vault server](https://github.com/your-org/vaultify)
+- A running [Vaultify vault server](https://github.com/vivaswanghosh/Vaultify)
 
 ## License
 
