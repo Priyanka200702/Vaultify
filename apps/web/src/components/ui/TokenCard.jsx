@@ -11,7 +11,7 @@ export default function TokenCard({ token, onRevoke }) {
   const statusVariant = isRevoked ? 'danger' : isExpired ? 'warning' : 'success';
 
   return (
-    <div className="glass-card p-5 flex flex-col h-full relative overflow-hidden group hover:-translate-y-1 hover:shadow-lg transition-all duration-300">
+    <div className="glass-card frost-card p-5 flex flex-col h-full relative overflow-hidden group hover:-translate-y-1 hover:shadow-lg transition-all duration-300">
       {/* Provider Accent Line */}
       <div 
         className="absolute top-0 left-0 w-full h-1 opacity-60 group-hover:opacity-100 transition-opacity"
@@ -24,10 +24,10 @@ export default function TokenCard({ token, onRevoke }) {
             {provider.icon}
           </div>
           <div>
-            <h4 className="text-sm font-semibold text-vault-text-primary">
+            <h4 className="headline-text text-sm font-semibold text-vault-text-primary">
               {token.vaultKeyId?.name || 'Unknown Key'}
             </h4>
-            <div className="text-[0.7rem] text-vault-text-muted mt-0.5">
+            <div className="body-text text-[0.7rem] text-vault-text-muted mt-0.5">
               {provider.name} • {token.environment}
             </div>
           </div>
@@ -50,16 +50,16 @@ export default function TokenCard({ token, onRevoke }) {
 
       <div className="grid grid-cols-2 gap-3 text-[0.75rem] mb-5">
         <div>
-          <span className="text-vault-text-muted block mb-0.5">Endpoints</span>
-          <span className="text-vault-text-primary">
+          <span className="tag-label text-vault-text-muted block mb-0.5">Endpoints</span>
+          <span className="body-text text-vault-text-primary">
             {token.allowedEndpoints?.length > 0 ? (
               token.allowedEndpoints.length === 1 && token.allowedEndpoints[0] === '*' ? 'All endpoints' : `${token.allowedEndpoints.length} restricted`
             ) : 'None'}
           </span>
         </div>
         <div>
-          <span className="text-vault-text-muted block mb-0.5">Created</span>
-          <span className="text-vault-text-primary">{formatDate(token.createdAt)}</span>
+          <span className="tag-label text-vault-text-muted block mb-0.5">Created</span>
+          <span className="body-text text-vault-text-primary">{formatDate(token.createdAt)}</span>
         </div>
       </div>
 

@@ -79,17 +79,17 @@ export default function Dashboard() {
         </div>
 
         <div>
-          <div className="glass-card p-6 relative overflow-hidden group h-full">
+          <div className="glass-card frost-card p-6 relative overflow-hidden group h-full">
             <div className="absolute -top-10 -right-10 w-40 h-40 bg-vault-primary/10 rounded-full blur-3xl"></div>
-            <h3 className="text-lg font-semibold text-vault-text-primary mb-4">Quick Actions</h3>
+            <h3 className="headline-text text-lg font-semibold text-vault-text-primary mb-4">Quick Actions</h3>
             
             <div className="space-y-3">
               <Link to="/tokens" className="block">
                 <div className="p-4 rounded-lg bg-[#0c1019]/60 border border-vault-border hover:border-vault-primary/30 transition-colors flex items-center gap-3">
                   <span className="text-xl">🎫</span>
                   <div>
-                    <h4 className="text-sm font-medium text-vault-text-primary">Issue Token</h4>
-                    <p className="text-xs text-vault-text-muted mt-0.5">Create a new proxy token</p>
+                    <h4 className="headline-text text-sm font-medium text-vault-text-primary">Issue Token</h4>
+                    <p className="body-text text-xs text-vault-text-muted mt-0.5">Create a new proxy token</p>
                   </div>
                 </div>
               </Link>
@@ -97,15 +97,15 @@ export default function Dashboard() {
                 <div className="p-4 rounded-lg bg-[#0c1019]/60 border border-vault-border hover:border-vault-primary/30 transition-colors flex items-center gap-3">
                   <span className="text-xl">👥</span>
                   <div>
-                    <h4 className="text-sm font-medium text-vault-text-primary">Invite Member</h4>
-                    <p className="text-xs text-vault-text-muted mt-0.5">Add someone to your workspace</p>
+                    <h4 className="headline-text text-sm font-medium text-vault-text-primary">Invite Member</h4>
+                    <p className="body-text text-xs text-vault-text-muted mt-0.5">Add someone to your workspace</p>
                   </div>
                 </div>
               </Link>
             </div>
             
             <div className="mt-8 pt-6 border-t border-vault-border">
-              <h4 className="text-xs font-semibold text-vault-text-secondary uppercase tracking-wider mb-3">System Health</h4>
+              <h4 className="tag-label text-xs font-semibold text-vault-text-secondary uppercase tracking-wider mb-3">System Health</h4>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-vault-text-muted">Average Latency</span>
                 <span className="font-mono text-vault-text-primary">{Math.round(auditStats?.avgLatency || 0)}ms</span>
