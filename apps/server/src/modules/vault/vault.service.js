@@ -6,7 +6,7 @@ const { keyCache } = require('../../services/cache.service');
  * Stores a real API key encrypted in the vault.
  */
 async function storeKey(workspaceId, { name, provider, environment, rawKey }) {
-  const encryptedKey = encryptKey(rawKey);
+  const encryptedKey = await encryptKey(rawKey);
 
   // Save first 8 chars as prefix for display (e.g. "sk-ant-a***")
   const keyPrefix = rawKey.substring(0, 8) + '***';
@@ -38,7 +38,7 @@ async function rotateKey(keyId, newRawKey, workspaceId) {
   const vaultKey = await VaultKey.findOne({ _id: keyId, workspaceId });
   if (!vaultKey) throw new Error('Vault key not found');
 
-  const encryptedKey = reEncryptKey(newRawKey, vaultKey.encryptedKey);
+  const encryptedKey = await reEncryptKey(newRawKey, vaultKey.encryptedKey);
   const keyPrefix = newRawKey.substring(0, 8) + '***';
 
   vaultKey.encryptedKey = encryptedKey;
@@ -94,7 +94,7 @@ async function getDecryptedKey(keyId) {
   const vaultKey = await VaultKey.findById(keyId);
   if (!vaultKey) throw new Error('Vault key not found');
 
-  const rawKey = decryptKey(vaultKey.encryptedKey);
+  const rawKey = await decryptKey(vaultKey.encryptedKey);
 
   // Cache for 60 seconds
   keyCache.set(cacheKey, rawKey);

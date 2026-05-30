@@ -21,8 +21,9 @@ app.use((req, res) => {
 
 app.use((err, req, res, next) => {
   const statusCode = err.status || err.statusCode || 500;
+  const errorCode = err.code || 'INTERNAL_ERROR';
   console.error('[Proxy] Unhandled error:', err.stack || err.message);
-  res.status(statusCode).json({ error: 'INTERNAL_ERROR', message: err.expose ? err.message : 'An unexpected error occurred' });
+  res.status(statusCode).json({ error: errorCode, message: err.expose ? err.message : 'An unexpected error occurred' });
 });
 
 module.exports = app;

@@ -17,11 +17,26 @@ const authLimiter = createRateLimiter({
   enableSlowBurn: true,
 });
 
+function providerKey(req) {
+  const prov = req.params?.provider || 'unknown';
+  return `${prov}:${req.ip || req.connection?.remoteAddress || 'unknown'}`;
+}
+
+function providerUserKey(req) {
+  const prov = req.params?.provider || 'unknown';
+  return `${prov}:${req.user?._id?.toString() || req.ip}`;
+}
+
+function providerWorkspaceKey(req) {
+  const prov = req.params?.provider || 'unknown';
+  return `${prov}:${req.user?.workspace?.toString() || req.user?._id?.toString() || req.ip}`;
+}
+
 const proxyLimiter = createRateLimiter({
   prefix: 'rl:proxy',
   windowMs: 60_000,
   max: 200,
-  keyType: 'ip',
+  keyFn: providerKey,
   message: 'Too many proxy requests. Please try again later.',
 });
 
@@ -29,7 +44,7 @@ const userLimiter = createRateLimiter({
   prefix: 'rl:user',
   windowMs: 60_000,
   max: 300,
-  keyType: 'user',
+  keyFn: providerUserKey,
   message: 'User rate limit exceeded.',
 });
 
@@ -37,7 +52,7 @@ const workspaceLimiter = createRateLimiter({
   prefix: 'rl:ws',
   windowMs: 60_000,
   max: 1000,
-  keyType: 'workspace',
+  keyFn: providerWorkspaceKey,
   message: 'Workspace rate limit exceeded.',
   enableSlowBurn: true,
 });

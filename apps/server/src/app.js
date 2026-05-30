@@ -67,15 +67,9 @@ app.use('/api/webhooks', webhookRoutes);
 app.use(internalRoutes);
 
 // ─────────────────────────── Proxy Routes ───────────────────────────
-// When PROXY_SERVICE_ENABLED, admin-service no longer serves proxy traffic.
-// Route all proxy calls to the standalone proxy-service instead.
 if (env.PROXY_SERVICE_ENABLED) {
-  app.all('/proxy*', (req, res) => {
-    res.status(503).json({
-      error: 'PROXY_SERVICE_DEPLOYED',
-      message: `Proxy traffic is now handled by the standalone proxy-service at ${env.PROXY_PORT ? `http://localhost:${env.PROXY_PORT}` : 'the configured proxy URL'}. Update your Vaultify SDK baseUrl to point there.`,
-    });
-  });
+  // Proxy traffic is handled by the standalone proxy-service.
+  // Admin server does not mount /proxy routes.
 } else {
   app.use('/proxy', proxyRoutes);
 }

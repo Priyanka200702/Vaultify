@@ -20,11 +20,13 @@ function errorHandler(err, req, res, next) {
 
   console.error(`[ERROR] ${err.message}`, env.NODE_ENV === 'development' ? err.stack : '');
 
+  const message = err.expose
+    ? err.message
+    : (env.NODE_ENV === 'production' ? 'An internal error occurred' : err.message);
+
   res.status(statusCode).json({
     error: errorCode,
-    message: env.NODE_ENV === 'production'
-      ? 'An internal error occurred'
-      : err.message,
+    message,
     ...(env.NODE_ENV === 'development' && { stack: err.stack }),
   });
 }

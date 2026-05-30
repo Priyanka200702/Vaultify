@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const { AccessRequest, ProxyToken, User, Workspace } = require('@vaultify/db');
 const { issueToken } = require('../tokens/token.service');
 const { notifyAccessRequest, notifyRequestDecision } = require('../../services/notification.service');
+const { createError } = require('../../middleware/errorHandler');
 
 function generateCsrfState() {
   return crypto.randomBytes(32).toString('hex');
@@ -44,10 +45,10 @@ async function listRequests(workspaceId, status = null) {
  */
 async function approveRequest(requestId, ownerNote = null, overrides = {}) {
   const request = await AccessRequest.findById(requestId);
-  if (!request) throw new Error('Request not found');
-  if (request.status !== 'pending') throw new Error('Request is not pending');
+  if (!request) throw createError('Request not found', 400, 'BAD_REQUEST');
+  if (request.status !== 'pending') throw createError('Request is not pending', 400, 'BAD_REQUEST');
   if (overrides.csrfState && request.csrfState && overrides.csrfState !== request.csrfState) {
-    throw new Error('Invalid CSRF state token');
+    throw createError('Invalid CSRF state token', 400, 'BAD_REQUEST');
   }
 
   // Apply overrides (owner can tighten scope)
@@ -84,10 +85,10 @@ async function approveRequest(requestId, ownerNote = null, overrides = {}) {
  */
 async function denyRequest(requestId, ownerNote, overrides = {}) {
   const request = await AccessRequest.findById(requestId);
-  if (!request) throw new Error('Request not found');
-  if (request.status !== 'pending') throw new Error('Request is not pending');
+  if (!request) throw createError('Request not found', 400, 'BAD_REQUEST');
+  if (request.status !== 'pending') throw createError('Request is not pending', 400, 'BAD_REQUEST');
   if (overrides.csrfState && request.csrfState && overrides.csrfState !== request.csrfState) {
-    throw new Error('Invalid CSRF state token');
+    throw createError('Invalid CSRF state token', 400, 'BAD_REQUEST');
   }
 
   request.status = 'denied';

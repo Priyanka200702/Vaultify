@@ -100,10 +100,11 @@ async function proxyMiddleware(req, res, next) {
     zeroKey(realKey);
     realKey = null;
   } catch (err) {
-    return res.status(500).json({
-      error: 'KEY_DECRYPT_FAILED',
-      message: 'Failed to retrieve the real API key from vault',
-    });
+    err.expose = true;
+    err.statusCode = 502;
+    err.code = 'KEY_DECRYPT_FAILED';
+    next(err);
+    return;
   }
 
   // --- Step 4: Build target URL and inject real key ---

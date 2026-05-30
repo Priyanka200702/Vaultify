@@ -1,5 +1,5 @@
 const { ProxyToken, AuditLog } = require('@vaultify/db');
-const { validateTokenFormat, ipAllowed, rollingWindowCount, checkScope, methodToScope } = require('@vaultify/utils');
+const { validateTokenFormat, ipAllowed, rollingWindowCount, checkScope, methodToScope, endpointToScope } = require('@vaultify/utils');
 const { DEFAULT_TOKEN_EXPIRY } = require('../../config/constants');
 
 async function validateToken(tokenString, requestedEndpoint, callerIp) {
@@ -30,8 +30,7 @@ async function validateToken(tokenString, requestedEndpoint, callerIp) {
     }
 
     if (token.scopes && token.scopes.length > 0 && requestedEndpoint) {
-      const method = requestedEndpoint.split(' ')[0] || 'GET';
-      const requiredScope = methodToScope(method);
+      const requiredScope = endpointToScope(requestedEndpoint);
       if (!checkScope(token.scopes, requiredScope)) {
         return { valid: false, token: null, error: `Token scope '${token.scopes.join(',')}' does not include '${requiredScope}'`, code: 'SCOPE_NOT_ALLOWED' };
       }

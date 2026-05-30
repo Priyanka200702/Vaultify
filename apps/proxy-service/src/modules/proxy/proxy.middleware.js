@@ -66,7 +66,10 @@ async function proxyMiddleware(req, res, next) {
       const rawKey = await decryptKey(token.vaultKeyId);
       keyBuf = buildKeyBuffer(rawKey);
     } catch (err) {
-      return res.status(500).json({ error: 'KEY_DECRYPT_FAILED', message: 'Failed to retrieve the real API key from vault' });
+      err.expose = true;
+      err.statusCode = 502;
+      err.code = 'KEY_DECRYPT_FAILED';
+      throw err;
     }
 
     const targetUrl = buildTargetUrl(provider, path);

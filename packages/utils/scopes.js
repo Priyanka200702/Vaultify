@@ -32,6 +32,29 @@ const SCOPE_HIERARCHY = Object.freeze({
   [SCOPES.PROXY_ADMIN]: [SCOPES.PROXY_READ, SCOPES.PROXY_WRITE],
 });
 
+// Endpoint → scope overrides for resource-aware access control.
+// Keys are regex patterns matched against "METHOD /path" (case-insensitive).
+// Order matters — first match wins.
+const ENDPOINT_SCOPE_MAP = [
+  // Streaming endpoints typically carry sensitive data in responses — proxy:write
+  { pattern: /^post\s+\/v\d+\/chat\/completions/i, scope: SCOPES.PROXY_WRITE },
+  { pattern: /^post\s+\/v\d+\/messages/i, scope: SCOPES.PROXY_WRITE },
+  { pattern: /^post\s+\/v\d+\/embeddings/i, scope: SCOPES.PROXY_WRITE },
+  { pattern: /^post\s+\/v\d+\/images\//i, scope: SCOPES.PROXY_WRITE },
+  { pattern: /^post\s+\/v\d+\/audio\//i, scope: SCOPES.PROXY_WRITE },
+  { pattern: /^post\s+\/v\d+\/moderations/i, scope: SCOPES.PROXY_WRITE },
+  { pattern: /^post\s+\/v\d+\/fine-tuning\//i, scope: SCOPES.PROXY_WRITE },
+  { pattern: /^post\s+\/v\d+\/batches/i, scope: SCOPES.PROXY_WRITE },
+  { pattern: /^post\s+\/v\d+\/vector-stores\//i, scope: SCOPES.PROXY_WRITE },
+  { pattern: /^post\s+\/v\d+\/assistants\//i, scope: SCOPES.PROXY_WRITE },
+  { pattern: /^post\s+\/v\d+\/threads\//i, scope: SCOPES.PROXY_WRITE },
+  { pattern: /^post\s+\/v\d+\/completions/i, scope: SCOPES.PROXY_WRITE },
+  { pattern: /^post\s+/, scope: SCOPES.PROXY_WRITE },
+  { pattern: /^put\s+/, scope: SCOPES.PROXY_WRITE },
+  { pattern: /^patch\s+/, scope: SCOPES.PROXY_WRITE },
+  { pattern: /^delete\s+/, scope: SCOPES.PROXY_WRITE },
+];
+
 function checkScope(tokenScopes, requiredScope) {
   if (!tokenScopes || tokenScopes.length === 0) return true;
   if (tokenScopes.includes('*')) return true;
@@ -50,4 +73,19 @@ function methodToScope(method) {
   return SCOPES.PROXY_ADMIN;
 }
 
-module.exports = { SCOPES, SCOPE_DESCRIPTIONS, SCOPE_METHOD_MAP, DEFAULT_SCOPE_SET, checkScope, methodToScope };
+/**
+ * Determines the required scope for an endpoint string "METHOD /path".
+ * Checks resource-specific overrides first, then falls back to method-based mapping.
+ * @param {string} endpoint - e.g. "POST /v1/chat/completions" or "GET /v1/models"
+ * @returns {string} The required scope
+ */
+function endpointToScope(endpoint) {
+  if (!endpoint || typeof endpoint !== 'string') return SCOPES.PROXY_ADMIN;
+  for (const { pattern, scope } of ENDPOINT_SCOPE_MAP) {
+    if (pattern.test(endpoint)) return scope;
+  }
+  const method = endpoint.split(' ')[0] || 'GET';
+  return methodToScope(method);
+}
+
+module.exports = { SCOPES, SCOPE_DESCRIPTIONS, SCOPE_METHOD_MAP, DEFAULT_SCOPE_SET, checkScope, methodToScope, endpointToScope };

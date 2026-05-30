@@ -6,10 +6,37 @@ const LOCKOUT_THRESHOLD = 5;
 const LOCKOUT_WINDOW_MS = 300_000;
 const LOCKOUT_DURATION_MS = [60_000, 300_000, 900_000, 3600_000];
 
-class AnomalyDetector {
+class MemoryStore {
   constructor() {
-    this.baselines = new Map();
-    this.lockouts = new Map();
+    this._data = new Map();
+  }
+
+  get(key) {
+    return this._data.get(key);
+  }
+
+  set(key, value) {
+    this._data.set(key, value);
+  }
+
+  delete(key) {
+    this._data.delete(key);
+  }
+
+  *entries(prefix) {
+    for (const [key, value] of this._data) {
+      if (key.startsWith(prefix)) yield [key, value];
+    }
+  }
+
+  clear() {
+    this._data.clear();
+  }
+}
+
+class AnomalyDetector {
+  constructor({ store } = {}) {
+    this.store = store || new MemoryStore();
     this.interval = setInterval(() => this.sweep(), 60_000);
     this.interval.unref();
   }
@@ -20,10 +47,10 @@ class AnomalyDetector {
 
   record(tokenId, features) {
     const key = this._key('anomaly', tokenId);
-    let baseline = this.baselines.get(key);
+    let baseline = this.store.get(key);
     if (!baseline) {
       baseline = { window: [], createdAt: Date.now() };
-      this.baselines.set(key, baseline);
+      this.store.set(key, baseline);
     }
 
     baseline.window.push({ ...features, ts: Date.now() });
@@ -34,7 +61,7 @@ class AnomalyDetector {
 
   score(tokenId, features) {
     const key = this._key('anomaly', tokenId);
-    const baseline = this.baselines.get(key);
+    const baseline = this.store.get(key);
     if (!baseline || baseline.window.length < 10) return 0;
 
     const scores = [];
@@ -70,7 +97,7 @@ class AnomalyDetector {
 
   checkLockout(tokenId) {
     const key = this._key('lockout', tokenId);
-    const lockout = this.lockouts.get(key);
+    const lockout = this.store.get(key);
     if (!lockout) return { locked: false };
 
     const elapsed = Date.now() - lockout.lockedAt;
@@ -82,7 +109,7 @@ class AnomalyDetector {
     const duration = LOCKOUT_DURATION_MS[Math.min(lockout.strike - LOCKOUT_THRESHOLD, LOCKOUT_DURATION_MS.length - 1)];
 
     if (elapsed >= duration) {
-      this.lockouts.delete(key);
+      this.store.delete(key);
       return { locked: false };
     }
 
@@ -91,10 +118,10 @@ class AnomalyDetector {
 
   recordAnomaly(tokenId) {
     const key = this._key('lockout', tokenId);
-    let lockout = this.lockouts.get(key);
+    let lockout = this.store.get(key);
     if (!lockout) {
       lockout = { strike: 0, lockedAt: 0 };
-      this.lockouts.set(key, lockout);
+      this.store.set(key, lockout);
     }
 
     const now = Date.now();
@@ -110,32 +137,32 @@ class AnomalyDetector {
   }
 
   clearToken(tokenId) {
-    this.baselines.delete(this._key('anomaly', tokenId));
-    this.lockouts.delete(this._key('lockout', tokenId));
+    this.store.delete(this._key('anomaly', tokenId));
+    this.store.delete(this._key('lockout', tokenId));
   }
 
   sweep(now = Date.now()) {
     const cutoff = now - 3600_000;
-    for (const [key, baseline] of this.baselines) {
+    for (const [key, baseline] of this.store.entries('anomaly:')) {
       if (baseline.createdAt < cutoff) {
-        this.baselines.delete(key);
+        this.store.delete(key);
       }
     }
-    for (const [key, lockout] of this.lockouts) {
+    for (const [key, lockout] of this.store.entries('lockout:')) {
       if (now - lockout.lockedAt > LOCKOUT_DURATION_MS[LOCKOUT_DURATION_MS.length - 1] * 2) {
-        this.lockouts.delete(key);
+        this.store.delete(key);
       }
     }
   }
 
   destroy() {
     clearInterval(this.interval);
-    this.baselines.clear();
-    this.lockouts.clear();
+    this.store.clear();
   }
 }
 
 module.exports = AnomalyDetector;
+module.exports.MemoryStore = MemoryStore;
 module.exports.MAD_THRESHOLD = MAD_THRESHOLD;
 module.exports.createMiddleware = function createMiddleware(detector) {
   function wrapAnomalyCheck(tokenId, issuedTo, callerIp, endpoint, statusCode) {

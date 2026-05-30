@@ -1,4 +1,5 @@
 const { Router } = require('express');
+const { asyncHandler } = require('@vaultify/utils');
 const { getDecryptedKey } = require('../vault/vault.service');
 
 const router = Router();
@@ -12,13 +13,9 @@ function requireInternalApiKey(req, res, next) {
   next();
 }
 
-router.post('/internal/vault/decrypt/:keyId', requireInternalApiKey, async (req, res, next) => {
-  try {
-    const rawKey = await getDecryptedKey(req.params.keyId);
-    res.json({ rawKey });
-  } catch (err) {
-    next(err);
-  }
-});
+router.post('/internal/vault/decrypt/:keyId', requireInternalApiKey, asyncHandler(async (req, res) => {
+  const rawKey = await getDecryptedKey(req.params.keyId);
+  res.json({ rawKey });
+}));
 
 module.exports = router;
