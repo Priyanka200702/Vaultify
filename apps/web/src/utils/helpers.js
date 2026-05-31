@@ -1,3 +1,28 @@
+import {
+  Bot,
+  Brain,
+  BriefcaseBusiness,
+  CalendarDays,
+  Cloud,
+  CloudCog,
+  Copy,
+  Database,
+  GitBranch,
+  GitFork,
+  KeyRound,
+  Leaf,
+  LayoutDashboard,
+  LockKeyhole,
+  RefreshCw,
+  ShieldAlert,
+  Sparkles,
+  Ticket,
+  TrainFront,
+  Triangle,
+  Trash2,
+  Wrench,
+} from 'lucide-react';
+
 /**
  * Masks a token string for display.
  * "vlt_prod_8x2kqr9m..." → "vlt_prod_8x2k••••••••"
@@ -56,22 +81,22 @@ export function getTokenStatus(token) {
  * Provider display info.
  */
 export const PROVIDERS = {
-  anthropic: { name: 'Anthropic', icon: '🤖', color: '#D4A574' },
-  openai: { name: 'OpenAI', icon: '🧠', color: '#10A37F' },
-  gemini: { name: 'Gemini', icon: '✨', color: '#4285F4' },
-  github: { name: 'GitHub', icon: '🐙', color: '#F0F6FC' },
-  gitlab: { name: 'GitLab', icon: '🦊', color: '#FC6D26' },
-  aws: { name: 'AWS', icon: '☁️', color: '#FF9900' },
-  azure: { name: 'Azure', icon: '☁️', color: '#0078D4' },
-  gcp: { name: 'Google Cloud', icon: '☁️', color: '#4285F4' },
-  supabase: { name: 'Supabase', icon: '🗄️', color: '#3ECF8E' },
-  planetscale: { name: 'PlanetScale', icon: '🗄️', color: '#000000' },
-  mongodb: { name: 'MongoDB Cloud', icon: '🍃', color: '#47A248' },
-  vercel: { name: 'Vercel', icon: '▲', color: '#FFFFFF' },
-  cloudflare: { name: 'Cloudflare', icon: '☁️', color: '#F38020' },
-  railway: { name: 'Railway', icon: '🚆', color: '#0B0D0E' },
-  stripe: { name: 'Stripe', icon: '💳', color: '#635BFF' },
-  custom: { name: 'Custom', icon: '🔧', color: '#94A3B8' },
+  anthropic: { name: 'Anthropic', icon: Bot, color: '#D4A574' },
+  openai: { name: 'OpenAI', icon: Brain, color: '#10A37F' },
+  gemini: { name: 'Gemini', icon: Sparkles, color: '#8AB87D' },
+  github: { name: 'GitHub', icon: GitFork, color: '#F0F6FC' },
+  gitlab: { name: 'GitLab', icon: GitBranch, color: '#FC6D26' },
+  aws: { name: 'AWS', icon: Cloud, color: '#FF9900' },
+  azure: { name: 'Azure', icon: CloudCog, color: '#0078D4' },
+  gcp: { name: 'Google Cloud', icon: Cloud, color: '#4285F4' },
+  supabase: { name: 'Supabase', icon: Database, color: '#3ECF8E' },
+  planetscale: { name: 'PlanetScale', icon: Database, color: '#000000' },
+  mongodb: { name: 'MongoDB Cloud', icon: Leaf, color: '#47A248' },
+  vercel: { name: 'Vercel', icon: Triangle, color: '#FFFFFF' },
+  cloudflare: { name: 'Cloudflare', icon: Cloud, color: '#F38020' },
+  railway: { name: 'Railway', icon: TrainFront, color: '#0B0D0E' },
+  stripe: { name: 'Stripe', icon: BriefcaseBusiness, color: '#635BFF' },
+  custom: { name: 'Custom', icon: Wrench, color: '#94A3B8' },
 };
 
 export function getProviderInfo(provider) {

@@ -1,12 +1,13 @@
 import { getProviderInfo, maskToken, formatDate, getTokenStatus } from '../../utils/helpers';
 import Badge from '../ui/Badge';
 import Button from '../ui/Button';
+import { Copy, KeyRound } from 'lucide-react';
 
 export default function TokenTable({ tokens, onRevoke }) {
   if (!tokens || tokens.length === 0) {
     return (
       <div className="text-center py-12 text-vault-text-muted bg-white/5 rounded-lg border border-vault-border border-dashed">
-        <div className="text-3xl mb-2">🎫</div>
+        <KeyRound className="mx-auto mb-2 h-8 w-8" />
         <h3 className="text-vault-text-primary text-sm font-medium mb-1">No proxy tokens found</h3>
         <p className="text-xs">Issue a proxy token to start replacing your real API keys.</p>
       </div>
@@ -45,13 +46,13 @@ export default function TokenTable({ tokens, onRevoke }) {
                       onClick={() => navigator.clipboard.writeText(token.tokenString)}
                       title="Copy full token"
                     >
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                      <Copy className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </td>
                 <td className="py-3 px-4">
                   <div className="flex items-center gap-2">
-                    <span title={provider.name}>{provider.icon}</span>
+                    <provider.icon title={provider.name} className="h-4 w-4" />
                     <span className="text-sm text-vault-text-primary">{token.vaultKeyId?.name || 'Unknown'}</span>
                   </div>
                 </td>

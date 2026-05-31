@@ -1,6 +1,7 @@
 import { getProviderInfo, maskToken, formatDate, getTokenStatus } from '../../utils/helpers';
 import Badge from './Badge';
 import Button from './Button';
+import { Copy } from 'lucide-react';
 
 export default function TokenCard({ token, onRevoke }) {
   const provider = getProviderInfo(token.vaultKeyId?.provider);
@@ -21,7 +22,7 @@ export default function TokenCard({ token, onRevoke }) {
       <div className="flex justify-between items-start mb-4 mt-1">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded bg-white/5 flex items-center justify-center text-lg border border-vault-border">
-            {provider.icon}
+            <provider.icon className="h-4 w-4" />
           </div>
           <div>
             <h4 className="headline-text text-sm font-semibold text-vault-text-primary">
@@ -44,7 +45,7 @@ export default function TokenCard({ token, onRevoke }) {
           onClick={() => navigator.clipboard.writeText(token.tokenString)}
           title="Copy full token"
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+          <Copy className="w-4 h-4" />
         </button>
       </div>
 

@@ -8,6 +8,7 @@ import Modal from '../components/ui/Modal';
 import TokenTable from '../components/tables/TokenTable';
 import TokenCard from '../components/ui/TokenCard';
 import IssueTokenForm from '../components/forms/IssueTokenForm';
+import { LayoutGrid, List, Ticket } from 'lucide-react';
 
 export default function Tokens() {
   const { tokens, vaultKeys, setTokens, setVaultKeys } = useStore();
@@ -67,13 +68,13 @@ export default function Tokens() {
               className={`p-1.5 rounded transition-all ${viewMode === 'card' ? 'bg-indigo-500/20 text-vault-primary-hover' : 'text-vault-text-muted hover:text-white'}`}
               onClick={() => setViewMode('card')}
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+              <LayoutGrid className="w-4 h-4" />
             </button>
             <button
               className={`p-1.5 rounded transition-all ${viewMode === 'table' ? 'bg-indigo-500/20 text-vault-primary-hover' : 'text-vault-text-muted hover:text-white'}`}
               onClick={() => setViewMode('table')}
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
+              <List className="w-4 h-4" />
             </button>
           </div>
           {vaultKeys.length > 0 && (
@@ -96,7 +97,7 @@ export default function Tokens() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 stagger-children">
               {tokens.length === 0 ? (
                 <div className="col-span-full py-20 text-center text-vault-text-muted bg-white/5 rounded-xl border border-vault-border border-dashed">
-                  <div className="text-4xl mb-3">🎫</div>
+                  <Ticket className="mx-auto mb-3 h-10 w-10 text-vault-primary-hover" />
                   <h3 className="text-vault-text-primary font-medium mb-1">No proxy tokens found</h3>
                   {vaultKeys.length > 0 ? (
                     <p className="text-sm">Click "Issue Token" to create your first proxy token.</p>

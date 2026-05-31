@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { X } from 'lucide-react';
 
 export default function Modal({ isOpen, onClose, title, sub, children }) {
   useEffect(() => {
@@ -30,7 +31,7 @@ export default function Modal({ isOpen, onClose, title, sub, children }) {
             onClick={onClose}
             className="text-vault-text-muted hover:text-white transition-colors p-1"
           >
-            ✕
+            <X className="h-4 w-4" />
           </button>
         </div>
         <div className="text-sm text-vault-text-secondary overflow-y-auto pr-1 flex-1 min-h-0">

@@ -1,10 +1,12 @@
 export default function StatsCard({ title, value, icon, trend }) {
+  const Icon = icon;
+
   return (
     <div className="glass-card ambient-card p-5 relative overflow-hidden group">
       <div className="flex items-center justify-between mb-3 relative z-10">
         <h4 className="metric-label text-xs font-medium text-vault-text-muted uppercase tracking-wider">{title}</h4>
         <div className="text-xl opacity-80 group-hover:opacity-100 transition-opacity group-hover:scale-110 duration-300">
-          {icon}
+          {Icon ? <Icon className="h-5 w-5" /> : null}
         </div>
       </div>
       <div className="flex items-baseline gap-3 relative z-10">

@@ -1,11 +1,12 @@
 import { formatDate, formatLatency, getStatusColor, getProviderInfo, maskToken } from '../../utils/helpers';
 import Badge from '../ui/Badge';
+import { ClipboardList } from 'lucide-react';
 
 export default function AuditTable({ logs }) {
   if (!logs || logs.length === 0) {
     return (
       <div className="text-center py-12 text-vault-text-muted bg-white/5 rounded-lg border border-vault-border border-dashed">
-        <div className="text-3xl mb-2">📋</div>
+        <ClipboardList className="mx-auto mb-2 h-8 w-8" />
         <h3 className="text-vault-text-primary text-sm font-medium mb-1">No audit logs found</h3>
         <p className="text-xs">Proxy token usage will appear here in real-time.</p>
       </div>
@@ -47,7 +48,7 @@ export default function AuditTable({ logs }) {
                 </td>
                 <td className="py-3 px-4">
                   <div className="flex items-center gap-2">
-                    <span title={provider.name}>{provider.icon}</span>
+                    <provider.icon title={provider.name} className="h-4 w-4" />
                     <span className="text-sm font-mono text-vault-text-primary truncate max-w-[200px]" title={log.endpoint}>
                       {log.endpoint}
                     </span>

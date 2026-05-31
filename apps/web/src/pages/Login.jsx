@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import Button from '../components/ui/Button';
+import { LockKeyhole } from 'lucide-react';
 
 export default function Login() {
   const [isRegister, setIsRegister] = useState(false);
@@ -40,7 +41,7 @@ export default function Login() {
       <div className="w-full max-w-md p-8 relative z-10 animate-[slideUp_0.5s_ease] rounded-2xl border border-[rgba(99,102,241,0.12)] bg-[rgba(16,22,40,0.55)] backdrop-blur-xl shadow-[0_0_30px_rgba(99,102,241,0.08)]">
         <div className="text-center mb-8">
           <div className="text-4xl mb-4 w-16 h-16 mx-auto flex items-center justify-center bg-linear-to-br from-vault-primary to-indigo-400 rounded-2xl shadow-[0_0_30px_rgba(99,102,241,0.3)]">
-            🔐
+            <LockKeyhole className="h-8 w-8 text-white" />
           </div>
           <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-linear-to-r from-white to-vault-text-secondary">
             {isRegister ? 'Create an Account' : 'Welcome back to Vaultify'}

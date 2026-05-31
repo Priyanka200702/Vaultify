@@ -7,6 +7,7 @@ import StatsCard from '../components/ui/StatsCard';
 import AuditTable from '../components/tables/AuditTable';
 import Button from '../components/ui/Button';
 import { Link } from 'react-router-dom';
+import { CalendarDays, KeyRound, RefreshCw, ShieldAlert, Ticket } from 'lucide-react';
 
 export default function Dashboard() {
   const { auditStats, tokens, setAuditStats, setTokens } = useStore();
@@ -38,31 +39,31 @@ export default function Dashboard() {
         <StatsCard
           title="Active Tokens"
           value={activeTokens}
-          icon="🎫"
+          icon={Ticket}
           trend={{ isPositive: true, value: 12 }}
         />
         <StatsCard
           title="Total API Calls"
           value={auditStats?.totalCalls || 0}
-          icon="🔄"
+          icon={RefreshCw}
         />
         <StatsCard
           title="Calls Today"
           value={auditStats?.callsToday || 0}
-          icon="📅"
+          icon={CalendarDays}
           trend={{ isPositive: true, value: 5 }}
         />
         <StatsCard
           title="Blocked Requests"
           value={auditStats?.blockedToday || 0}
-          icon="🛡️"
+          icon={ShieldAlert}
           trend={auditStats?.blockedToday > 0 ? { isPositive: false, value: 'Action Needed' } : null}
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <div className="glass-card p-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
+        <div className="lg:col-span-2 h-full">
+          <div className="glass-card p-6 h-full flex flex-col">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-lg font-semibold text-vault-text-primary">Recent Activity</h3>
               <Link to="/audit">
@@ -70,15 +71,17 @@ export default function Dashboard() {
               </Link>
             </div>
 
-            {logsFetch.loading && !recentLogs.length ? (
-              <div className="py-10 text-center text-vault-text-muted">Loading activity...</div>
-            ) : (
-              <AuditTable logs={recentLogs} />
-            )}
+            <div className="flex-1 min-h-0">
+              {logsFetch.loading && !recentLogs.length ? (
+                <div className="py-10 text-center text-vault-text-muted">Loading activity...</div>
+              ) : (
+                <AuditTable logs={recentLogs} />
+              )}
+            </div>
           </div>
         </div>
 
-        <div>
+        <div className="h-full">
           <div className="glass-card frost-card p-6 relative overflow-hidden group h-full">
             <div className="absolute -top-10 -right-10 w-40 h-40 bg-vault-primary/10 rounded-full blur-3xl"></div>
             <h3 className="headline-text text-lg font-semibold text-vault-text-primary mb-4">Quick Actions</h3>
@@ -86,7 +89,7 @@ export default function Dashboard() {
             <div className="space-y-3">
               <Link to="/tokens" className="block">
                 <div className="p-4 rounded-lg bg-[#0c1019]/60 border border-vault-border hover:border-vault-primary/30 transition-colors flex items-center gap-3">
-                  <span className="text-xl">🎫</span>
+                  <Ticket className="h-5 w-5 text-vault-primary-hover" />
                   <div>
                     <h4 className="headline-text text-sm font-medium text-vault-text-primary">Issue Token</h4>
                     <p className="body-text text-xs text-vault-text-muted mt-0.5">Create a new proxy token</p>
